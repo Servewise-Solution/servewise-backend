@@ -1,0 +1,144 @@
+import {
+  Model,
+  Document,
+  type QueryFilter,
+  type UpdateQuery,
+  type SortOrder,
+} from "mongoose";
+
+type PopulateOption = {
+  path: string;
+  select?: string;
+  populate?: PopulateOption | PopulateOption[];
+};
+
+export class BaseRepository<T extends Document> {
+  protected model: Model<T>;
+
+  constructor(model: Model<T>) {
+    this.model = model;
+  }
+
+  async create(data: Partial<T>) {
+    const createdDoc = new this.model(data);
+    return await createdDoc.save();
+  }
+
+  async find(
+    filter: QueryFilter<T> = {},
+    options?: {
+      pagination?: { page: number; limit: number };
+      sort?: Record<string, SortOrder>;
+      populate?: PopulateOption | PopulateOption[];
+    },
+  ): Promise<T[] | { data: T[]; total: number }> {
+    let query = this.model.find(filter);
+
+    if (options?.sort) {
+      query = query.sort(options.sort);
+    }
+
+    if (options?.populate) {
+      query = query.populate(options.populate);
+    }
+
+    if (options?.pagination) {
+      const { page, limit } = options.pagination;
+      const skip = (page - 1) * limit;
+
+      query = query.skip(skip).limit(limit);
+
+      const data = await query.exec();
+
+      const total = await this.countDocument(filter);
+
+      return {
+        data,
+        total,
+      };
+    }
+    return await query.exec();
+  }
+
+  async findAll(
+    filter: QueryFilter<T> = {},
+    sort?: Record<string, SortOrder>,
+  ): Promise<T[]> {
+    let query = this.model.find(filter);
+
+    if (sort) {
+      query = query.sort(sort);
+    }
+
+    return await query.exec();
+  }
+
+  async findOne(
+    filter: QueryFilter<T>,
+    options?: {
+      populate?: PopulateOption | PopulateOption[];
+    },
+  ): Promise<T | null> {
+    let query = this.model.findOne(filter);
+
+    if (options?.populate) {
+      const populateOptions = Array.isArray(options.populate)
+        ? options.populate
+        : [options.populate];
+
+      populateOptions.forEach((populateOption) => {
+        query = query.populate(populateOption);
+      });
+    }
+
+    return await query.exec();
+  }
+
+  async findById(
+    id: string,
+    options?: {
+      populate?: PopulateOption | PopulateOption[];
+    },
+  ): Promise<T | null> {
+    let query = this.model.findById(id);
+
+    if (options?.populate) {
+      const populateOptions = Array.isArray(options.populate)
+        ? options.populate
+        : [options.populate];
+
+      populateOptions.forEach((populateOption) => {
+        query = query.populate(populateOption);
+      });
+    }
+
+    return await query.exec();
+  }
+
+  async updateOne(
+    filter: QueryFilter<T>,
+    update: UpdateQuery<T>,
+  ): Promise<T | null> {
+    return await this.model
+      .findOneAndUpdate(filter, update, { new: true })
+      .exec();
+  }
+
+  async deleteOne(filter: QueryFilter<T>): Promise<T | null> {
+    return await this.model.findOneAndDelete(filter).exec();
+  }
+
+  async deleteMany(
+    filter: QueryFilter<T>,
+  ): Promise<{ acknowledged: boolean; deletedCount: number }> {
+    const result = await this.model.deleteMany(filter);
+    return {
+      acknowledged: result.acknowledged,
+      deletedCount: result.deletedCount,
+    };
+  }
+
+  async countDocument(filter: QueryFilter<T> = {}): Promise<number> {
+    return await this.model.countDocuments(filter).exec();
+  }
+}

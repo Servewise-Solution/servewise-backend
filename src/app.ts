@@ -1,5 +1,5 @@
 import express, { type Application } from "express";
-import type { IApp } from "./interfaces/app.interface.js";
+import type { IApp } from "./interfaces/infra/app.interface.js";
 import { injectable } from "tsyringe";
 
 @injectable()
