@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { config } from "./env.js";
-import type { IDataBase } from "../interfaces/database.interface.js";
+import type { IDataBase } from "../interfaces/infra/database.interface.js";
 import { injectable } from "tsyringe";
 
 @injectable()
