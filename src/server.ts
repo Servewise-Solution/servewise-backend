@@ -3,7 +3,7 @@ import { inject, injectable } from "tsyringe";
 import type { IServer } from "./interfaces/infra/server.interface.js";
 import type { IApp } from "./interfaces/infra/app.interface.js";
 import type { IDataBase } from "./interfaces/infra/database.interface.js";
-import type { IRedisService } from "./interfaces/infra/redis.interface.js";
+import type { IRedisService } from "./interfaces/infra/redisService.interface.js";
 import { config } from "./config/env.js";
 import { container } from "./di/container.js";
 

@@ -1,4 +1,4 @@
-import type { IOTPService } from "../interfaces/infra/otp.interface.js";
+import type { IOTPService } from "../interfaces/infra/otpService.interface.js";
 
 export class OTPService implements IOTPService {
   generateOtp(): string {

@@ -1,4 +1,4 @@
-import type { IPasswordHasher } from "../interfaces/infra/password.interface.js";
+import type { IPasswordHasher } from "../interfaces/infra/passwordService.interface.js";
 import argon2 from "argon2";
 
 export class PasswordHasher implements IPasswordHasher {

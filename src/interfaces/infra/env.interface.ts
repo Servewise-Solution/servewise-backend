@@ -9,4 +9,6 @@ export interface IConfig {
   REFRESH_TOKEN_COOKIE_MAX_AGE: number;
   REDIS_HOST: string;
   REDIS_PORT: number;
+  EMAIL_PASS:string;
+  EMAIL_USER:string;
 }

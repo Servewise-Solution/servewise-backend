@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
-import type { IAccount } from "../interfaces/model/account.interface.js";
+import type { IAccount } from "../interfaces/model/accountModel.interface.js";
 
-const accountSchema: Schema<IAccount> = new Schema(
+const accountSchema = new Schema<IAccount>(
   {
     email: {
       type: String,
@@ -21,6 +21,4 @@ const accountSchema: Schema<IAccount> = new Schema(
   { timestamps: true },
 );
 
-const account = mongoose.model<IAccount>("account", accountSchema);
-
-export default account;
+export const accountModel = mongoose.model<IAccount>("account", accountSchema);
