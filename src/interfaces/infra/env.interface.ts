@@ -11,4 +11,5 @@ export interface IConfig {
   REDIS_PORT: number;
   EMAIL_PASS:string;
   EMAIL_USER:string;
+  OTP_EXPIRY_SECONDS:number;
 }
