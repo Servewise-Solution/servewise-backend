@@ -2,7 +2,7 @@ import jwt, { type Secret, type SignOptions } from "jsonwebtoken";
 import {
   type IJwtService,
   type ITokenPayload,
-} from "../interfaces/infra/jwt.interface.js";
+} from "../interfaces/infra/jwtService.interface.js";
 import { config } from "../config/env.js";
 import { injectable } from "tsyringe";
 

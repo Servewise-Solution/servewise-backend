@@ -1,5 +1,5 @@
 import { Redis } from "ioredis";
-import type { IRedisService } from "../interfaces/infra/redis.interface.js";
+import type { IRedisService } from "../interfaces/infra/redisService.interface.js";
 import { config } from "../config/env.js";
 
 export class RedisService implements IRedisService {

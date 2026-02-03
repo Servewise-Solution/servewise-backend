@@ -14,6 +14,8 @@ function validateEnvVars() {
     "REFRESH_TOKEN_COOKIE_MAX_AGE",
     "REDIS_HOST",
     "REDIS_PORT",
+    "EMAIL_PASS",
+    "EMAIL_USER",
   ];
 
   requiredEnvVars.forEach((envVar) => {
@@ -38,4 +40,6 @@ export const config: IConfig = {
   ),
   REDIS_HOST: process.env.REDIS_HOST as string,
   REDIS_PORT: Number(process.env.REDIS_PORT),
+  EMAIL_USER: process.env.EMAIL_USER as string,
+  EMAIL_PASS: process.env.EMAIL_PASS as string,
 };
