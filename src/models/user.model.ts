@@ -24,6 +24,10 @@ const userSchema = new Schema<IUser>(
     image: {
       type: String,
     },
+    status: {
+      type: String,
+      enum: ["Active", "Blocked"],
+    },
   },
   { timestamps: true },
 );

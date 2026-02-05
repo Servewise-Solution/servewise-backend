@@ -5,4 +5,6 @@ import type { IUser } from "../model/userModel.interface.js";
 
 export interface IAccountRepository {
   createAccount(accountData: CreateAccount): Promise<IAccount>;
+  findByEmail(email: string): Promise<IAccount | null>
+  updatePassword(email: string, hashedPassword: string): Promise<void>
 }

@@ -12,4 +12,5 @@ export interface IConfig {
   EMAIL_PASS:string;
   EMAIL_USER:string;
   OTP_EXPIRY_SECONDS:number;
+  NODE_ENV:string
 }
