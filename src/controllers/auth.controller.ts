@@ -7,6 +7,7 @@ import {
   createSuccessResponse,
 } from "../utils/responseHelper.utils.js";
 import { MESSAGES } from "../constants/messages.js";
+import { config } from "../config/env.js";
 
 @injectable()
 export class AuthController {
@@ -92,6 +93,166 @@ export class AuthController {
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse(MESSAGES.INTERNAL_SERVER_ERROR));
+    }
+  }
+  async login(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering the user login function in usercontroller");
+      const data = req.body;
+
+      const serviceResponse = await this._authService.login(data);
+      console.log("response from the login controller", serviceResponse);
+
+      if (serviceResponse.success) {
+        res.cookie("refresh_token", serviceResponse.refresh_token, {
+          httpOnly: true,
+          secure: config.NODE_ENV === "production",
+          sameSite:
+            config.NODE_ENV === "production"
+              ? ("strict" as const)
+              : ("lax" as const),
+          maxAge: config.REFRESH_TOKEN_COOKIE_MAX_AGE,
+        });
+
+        res.status(HTTP_STATUS.OK).json(
+          createSuccessResponse(
+            {
+              user: serviceResponse.data,
+              access_token: serviceResponse.access_token,
+            },
+            serviceResponse.message
+          )
+        );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("Invalid password")
+          ? HTTP_STATUS.UNAUTHORIZED
+          : serviceResponse.message?.includes("verify your email")
+          ? HTTP_STATUS.FORBIDDEN
+          : serviceResponse.message?.includes("blocked")
+          ? HTTP_STATUS.FORBIDDEN
+          : HTTP_STATUS.BAD_REQUEST;
+
+        res
+          .status(statusCode)
+          .json(createErrorResponse(serviceResponse.message || "Login failed"));
+      }
+    } catch (error) {
+      console.log("error:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error"));
+    }
+  }
+
+  async resendOtp(req: Request, res: Response): Promise<void> {
+    try {
+      const { email } = req.body;
+      const serviceResponse = await this._authService.resendOtp(email);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(
+              { email: serviceResponse.email },
+              serviceResponse.message
+            )
+          );
+      } else {
+        let statusCode: number;
+        let message: string = serviceResponse.message || "Failed to resend OTP";
+
+        if (serviceResponse.message?.includes("not found")) {
+          statusCode = HTTP_STATUS.NOT_FOUND;
+          message = MESSAGES.USER_NOT_FOUND;
+        } else {
+          statusCode = HTTP_STATUS.BAD_REQUEST;
+        }
+
+        res.status(statusCode).json(createErrorResponse(message));
+      }
+    } catch (error) {
+      console.log("error in the resendOtp controller", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse(MESSAGES.INTERNAL_SERVER_ERROR));
+    }
+  }
+
+  async forgotPassword(req: Request, res: Response): Promise<void> {
+    try {
+      const { email } = req.body;
+      const serviceResponse = await this._authService.forgotPassword({ email });
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(
+              { email: serviceResponse.email },
+              serviceResponse.message
+            )
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("blocked") ||
+            serviceResponse.message?.includes("verify your email")
+          ? HTTP_STATUS.FORBIDDEN
+          : HTTP_STATUS.BAD_REQUEST;
+
+        const message = serviceResponse.message?.includes("not found")
+          ? MESSAGES.USER_NOT_FOUND
+          : serviceResponse.message || "Failed to send reset email";
+
+        res.status(statusCode).json(createErrorResponse(message));
+      }
+    } catch (error) {
+      console.log("error occured:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse(MESSAGES.INTERNAL_SERVER_ERROR));
+    }
+  }
+
+  async resetPassword(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("Entering resetPassword function in userController");
+      const { email, password } = req.body;
+
+      const serviceResponse = await this._authService.resetPassword({
+        email,
+        password,
+      });
+      console.log("Response from resetPassword service:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(createSuccessResponse(null, serviceResponse.message));
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("verify your email")
+          ? HTTP_STATUS.FORBIDDEN
+          : serviceResponse.message?.includes("blocked")
+          ? HTTP_STATUS.FORBIDDEN
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to reset password"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("Error in resetPassword controller:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 }

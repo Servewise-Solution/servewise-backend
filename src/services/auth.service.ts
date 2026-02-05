@@ -6,27 +6,34 @@ import type {
   OtpVerificationResult,
 } from "../interfaces/infra/otpService.interface.js";
 import type {
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
   IRegisterData,
   IRegisterResponse,
+  LoginData,
+  LoginResponse,
   PendingUserData,
+  ResendOtpResponse,
+  ResetPasswordData,
+  ResetPasswordResponse,
   VerifyOtpData,
   VerifyOtpResponse,
 } from "../interfaces/DTO/services/authService.dto.js";
-import type { IAuthRepository } from "../interfaces/repository/auth.repository.js";
+import type { IUserRepository } from "../interfaces/repository/auth.repository.js";
 import type { IRedisService } from "../interfaces/infra/redisService.interface.js";
 import { OTP_PREFIX, OtpPurpose } from "../constants/otp.constant.js";
 import { config } from "../config/env.js";
 import type { IEmailService } from "../interfaces/infra/emailService.interface.js";
 import type { IPasswordHasher } from "../interfaces/infra/passwordService.interface.js";
 import type { IAccountRepository } from "../interfaces/repository/account.repository.js";
-
+import type { CreateUser } from "../interfaces/DTO/repository/authRepository.dto.js";
 
 @injectable()
 export class AuthService implements IAuthService {
   constructor(
     @inject("IJwtService") private _jwtService: IJwtService,
     @inject("IOTPService") private _otpService: IOTPService,
-    @inject("IAuthRepository") private _authRepository: IAuthRepository,
+    @inject("IAuthRepository") private _userRepository: IUserRepository,
     @inject("IRedisService") private _redisService: IRedisService,
     @inject("IEmailService") private _emailService: IEmailService,
     @inject("IPasswordHasher") private _passwordHasher: IPasswordHasher,
@@ -90,14 +97,11 @@ export class AuthService implements IAuthService {
 
   async register(data: IRegisterData): Promise<IRegisterResponse> {
     try {
-      console.log(
-        "entering to the usersignup function in the userauth service"
-      );
-      console.log("data:", data);
+      console.log("entering user signup");
 
-      const { email, password, role } = data;
+      const { email, password, username, phone } = data;
 
-      const existingUser = await this._authRepository.findByEmail(email);
+      const existingUser = await this._accountRepository.findByEmail(email);
       if (existingUser) {
         return {
           message: "User already exists, please login",
@@ -108,14 +112,13 @@ export class AuthService implements IAuthService {
       const pendingUser = await this._redisService.getObject<PendingUserData>(
         `pending_user:${email}`
       );
-      if (pendingUser) {
-        console.log("user has pending signup, resending otp");
 
+      if (pendingUser) {
         const otp = await this.generateAndSendOtp(
           email,
           OtpPurpose.REGISTRATION
         );
-        console.log("generated new otp for pending user:", otp);
+        console.log("otp from pending user", otp);
 
         await this._redisService.setObject(
           `pending_user:${email}`,
@@ -132,12 +135,14 @@ export class AuthService implements IAuthService {
 
       const hashedPassword = await this._passwordHasher.hash(password);
       const otp = await this.generateAndSendOtp(email, OtpPurpose.REGISTRATION);
-
-      console.log("Generated otp for new user registration:", otp);
+      console.log("otp", otp);
 
       const userData: PendingUserData = {
-        ...data,
+        email,
+        username,
+        phone,
         password: hashedPassword,
+        role: "USER",
       };
 
       await this._redisService.setObject(
@@ -146,16 +151,14 @@ export class AuthService implements IAuthService {
         config.OTP_EXPIRY_SECONDS
       );
 
-      console.log("pending user data stored in redis");
-
       return {
         message: "User created successfully, OTP sent",
         success: true,
         data: { email },
       };
     } catch (error) {
-      console.log("Error during user signup:", error);
-      throw new Error("An error occurred during the user signup");
+      console.log("Error during signup:", error);
+      throw new Error("Signup failed");
     }
   }
 
@@ -192,10 +195,8 @@ export class AuthService implements IAuthService {
           };
         }
 
-     
         const { username, phone, password, role } = pendingUser;
 
-     
         const newAccount = await this._accountRepository.createAccount({
           email,
           password,
@@ -203,17 +204,26 @@ export class AuthService implements IAuthService {
         });
         console.log("Created account with ID:", newAccount._id);
 
-    
-        const newUser = await this._authRepository.createUser({
-          accountId: newAccount._id as any, 
-          username,
-          phone,
-          isVerified: true,
-        });
+        switch (role) {
+          case "USER": {
+            const newUser = await this._userRepository.createUser({
+              accountId: newAccount._id as any,
+              username,
+              phone,
+              status: "Active",
+              isVerified: true,
+            });
 
-        console.log("Created user with ID:", newUser._id);
+            console.log("Created USER with ID:", newUser._id);
+            break;
+          }
+          default:
+            return {
+              success: false,
+              message: "Invalid role selected",
+            };
+        }
 
-   
         const otpRedisKey = this.getOtpRedisKey(email, OtpPurpose.REGISTRATION);
         await this._redisService.delete(otpRedisKey);
         await this._redisService.delete(`pending_user:${email}`);
@@ -224,7 +234,7 @@ export class AuthService implements IAuthService {
         };
       } else if (OtpPurpose.PASSWORD_RESET === purpose) {
         console.log("password resetting in the userAuthService");
-        const user = await this._authRepository.findByEmail(email);
+        const user = await this._accountRepository.findByEmail(email);
         console.log("user from the password resetting:", user);
 
         if (!user) {
@@ -252,6 +262,245 @@ export class AuthService implements IAuthService {
       return {
         success: false,
         message: "An error occurred during the otp verification",
+      };
+    }
+  }
+
+  async login(data: LoginData): Promise<LoginResponse> {
+    try {
+      console.log("entering to the login credentials verifying in service");
+      const { email, password } = data;
+
+      const account = await this._accountRepository.findByEmail(email);
+      console.log("user", account);
+
+      if (!account) {
+        return {
+          success: false,
+          message: "account not found",
+        };
+      }
+
+      const user = await this._userRepository.findByAccountId(account._id);
+
+      if (!user) {
+        return {
+          success: false,
+          message: "user not found",
+        };
+      }
+
+      if (user.status !== "Active") {
+        return {
+          success: false,
+          message: "Your account has been blocked. Please contact support.",
+        };
+      }
+
+      const isPasswordValid = await this._passwordHasher.verify(
+        account.password,
+        password
+      );
+
+      if (!isPasswordValid) {
+        return {
+          success: false,
+          message: "Invalid password",
+        };
+      }
+
+      const accountId = String(account._id);
+      console.log("accountId from login:", accountId);
+
+      const access_token = this._jwtService.generateAccessToken(
+        accountId,
+        account.role
+      );
+
+      const refresh_token = this._jwtService.generateRefreshToken(
+        accountId,
+        account.role
+      );
+
+      return {
+        success: true,
+        message: "Login successful",
+        access_token,
+        refresh_token,
+        data: {
+          _id: user._id,
+          username: user.username,
+          email: account.email,
+          phone: user.phone,
+          image: user.image,
+          status: user.status,
+        },
+      };
+    } catch (error) {
+      console.log("error", error);
+      return {
+        success: false,
+        message: "Error occurred during login",
+      };
+    }
+  }
+
+  async resendOtp(data: string): Promise<ResendOtpResponse> {
+    try {
+      console.log("entering resendotp function in the userservice");
+
+      const user = await this._accountRepository.findByEmail(data);
+
+      if (user) {
+        const newOtp = await this.generateAndSendOtp(
+          data,
+          OtpPurpose.PASSWORD_RESET
+        );
+        console.log("generated new OTP for password reset:", newOtp);
+
+        return {
+          success: true,
+          message: "OTP sent successfully for password reset",
+          email: data,
+        };
+      }
+
+      const pendingUser = await this._redisService.getObject<CreateUser>(
+        `pending_user:${data}`
+      );
+
+      if (pendingUser) {
+        const newOtp = await this.generateAndSendOtp(
+          data,
+          OtpPurpose.REGISTRATION
+        );
+        console.log("generated new OTP for registration:", newOtp);
+
+        await this._redisService.setObject(
+          `pending_user:${data}`,
+          pendingUser,
+          config.OTP_EXPIRY_SECONDS
+        );
+
+        return {
+          success: true,
+          message: "OTP sent successfully for registration",
+          email: data,
+        };
+      }
+
+      return {
+        success: false,
+        message: "User not found. Please signup first",
+      };
+    } catch (error) {
+      console.log("error occurred while resending the otp", error);
+      return {
+        success: false,
+        message: "Error occurred while resending the otp",
+      };
+    }
+  }
+
+  async forgotPassword(
+    data: ForgotPasswordRequest
+  ): Promise<ForgotPasswordResponse> {
+    try {
+      console.log("Entering forgotPassword in userService");
+      const { email } = data;
+
+      const account = await this._accountRepository.findByEmail(email);
+      console.log("user", account);
+
+      if (!account) {
+        return {
+          success: false,
+          message: "account not found",
+        };
+      }
+
+      const user = await this._userRepository.findByAccountId(account._id);
+
+      if (!user) {
+        return {
+          success: false,
+          message: "user not found",
+        };
+      }
+
+      if (user.status !== "Active") {
+        return {
+          success: false,
+          message: "Your account has been blocked. Please contact support.",
+        };
+      }
+      const otp = await this.generateAndSendOtp(
+        email,
+        OtpPurpose.PASSWORD_RESET
+      );
+      console.log("Generated OTP for password reset:", otp);
+
+      return {
+        success: true,
+        message: "Password reset OTP sent to your email",
+        email,
+      };
+    } catch (error) {
+      console.log("Error during forgot password:", error);
+      return {
+        success: false,
+        message: "An error occurred during password reset process",
+      };
+    }
+  }
+
+  async resetPassword(data: ResetPasswordData): Promise<ResetPasswordResponse> {
+    try {
+      console.log("Entering resetPassword in userService");
+      const { email, password } = data;
+
+      const account = await this._accountRepository.findByEmail(email);
+      console.log("user", account);
+
+      if (!account) {
+        return {
+          success: false,
+          message: "account not found",
+        };
+      }
+
+      const user = await this._userRepository.findByAccountId(account._id);
+
+      if (!user) {
+        return {
+          success: false,
+          message: "user not found",
+        };
+      }
+
+      if (user.status !== "Active") {
+        return {
+          success: false,
+          message: "Your account has been blocked. Please contact support.",
+        };
+      }
+
+      const hashedPassword = await this._passwordHasher.hash(password);
+
+      await this._accountRepository.updatePassword(email, hashedPassword);
+
+      const redisKey = this.getOtpRedisKey(email, OtpPurpose.PASSWORD_RESET);
+      await this._redisService.delete(redisKey);
+
+      return {
+        success: true,
+        message: "Password reset successful",
+      };
+    } catch (error) {
+      console.log("Error during password reset:", error);
+      return {
+        success: false,
+        message: "An error occurred during password reset",
       };
     }
   }

@@ -6,6 +6,8 @@ import type { IDataBase } from "./interfaces/infra/database.interface.js";
 import type { IRedisService } from "./interfaces/infra/redisService.interface.js";
 import { config } from "./config/env.js";
 import { container } from "./di/container.js";
+import Admin from "./models/admin.model.js";
+import argon2 from "argon2";
 
 @injectable()
 export class Server implements IServer {
@@ -19,6 +21,23 @@ export class Server implements IServer {
     try {
       await this._database.connect();
 
+      const admin=await Admin.findOne({email:"servewise@gmail.com"})
+
+      if(!admin){
+        const createAdmin=async()=>{
+          try {
+            const hashedPassword=await argon2.hash("Servewise@1234")
+            await Admin.create({
+              email:"servewise@gmail.com",
+              password:hashedPassword,
+              status:"Active"
+            })
+          } catch (error) {
+            
+          }
+        }
+        createAdmin()
+      }
       this._app.getApp().listen(config.PORT, () => {
         console.log(`server is running on http://localhost:${config.PORT}`);
       });

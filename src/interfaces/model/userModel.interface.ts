@@ -5,6 +5,7 @@ export interface IUser extends Document {
   username: string;
   phone: number;
   image: string;
+  status:"Active" | "Blocked";
   isVerified: boolean;
   createdAt?: Date;
   updatedAt?: Date;

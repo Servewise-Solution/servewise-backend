@@ -1,35 +1,33 @@
-
 import { injectable } from "tsyringe";
 import { BaseRepository } from "./base.repository.js";
 import type { IUser } from "../interfaces/model/userModel.interface.js";
-
-import type { CreateUser } from "../interfaces/DTO/repository/authRepository.dto.js";
-import { userModel } from "../models/user.model.js";
-import type { IAuthRepository } from "../interfaces/repository/auth.repository.js";
+import type { IAccountRepository } from "../interfaces/repository/account.repository.js";
+import type { CreateAccount } from "../interfaces/DTO/repository/accountRepository.dto.js";
+import type { IAccount } from "../interfaces/model/accountModel.interface.js";
+import { accountModel } from "../models/account.model.js";
 
 @injectable()
-export class AuthRepository
-  extends BaseRepository<IUser>
-  implements IAuthRepository
+export class AccountRepository
+  extends BaseRepository<IAccount>
+  implements IAccountRepository
 {
   constructor() {
-    super(userModel);
+    super(accountModel);
   }
-  async createUser(userData: CreateUser): Promise<IUser> {
+  async createAccount(accountData: CreateAccount): Promise<IAccount> {
     try {
-      const newUser = await this.create(userData);
-      console.log("savedUser from userRepository:", newUser);
-      if (!newUser) {
+      const newAccount = await this.create(accountData);
+      console.log("savedAccount from accountRepository:", newAccount);
+      if (!newAccount) {
         throw new Error("cannot be saved");
       }
-      return newUser;
+      return newAccount;
     } catch (error) {
-      console.log("error occured while creating the user:", error);
-      throw new Error("Error occured while creating new user");
+      console.log("error occured while creating the account:", error);
+      throw new Error("Error occured while creating new account");
     }
   }
-
-  async findByEmail(email: string): Promise<IUser | null> {
+  async findByEmail(email: string): Promise<IAccount | null> {
     try {
       const userData = await this.findOne({ email });
       console.log("userData from user repository:", userData);
@@ -37,6 +35,22 @@ export class AuthRepository
     } catch (error) {
       console.log("error occured while fetching the user:", error);
       throw new Error("An error occurred while retrieving the user");
+    }
+  }
+
+  async updatePassword(email: string, hashedPassword: string): Promise<void> {
+    try {
+      const result = await this.updateOne(
+        { email },
+        { password: hashedPassword }
+      );
+
+      if (!result) {
+        throw new Error("Failed to update password or user not found");
+      }
+    } catch (error) {
+      console.log("Error occurred while updating password:", error);
+      throw new Error("An error occurred while updating the password");
     }
   }
 }

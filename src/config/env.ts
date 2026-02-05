@@ -16,7 +16,8 @@ function validateEnvVars() {
     "REDIS_PORT",
     "EMAIL_PASS",
     "EMAIL_USER",
-    "OTP_EXPIRY_SECONDS"
+    "OTP_EXPIRY_SECONDS",
+    "NODE_ENV"
   ];
 
   requiredEnvVars.forEach((envVar) => {
@@ -44,4 +45,5 @@ export const config: IConfig = {
   EMAIL_USER: process.env.EMAIL_USER as string,
   EMAIL_PASS: process.env.EMAIL_PASS as string,
   OTP_EXPIRY_SECONDS: Number(process.env.OTP_EXPIRY_SECONDS) || 300,
+  NODE_ENV:process.env.NODE_ENV as string
 };
