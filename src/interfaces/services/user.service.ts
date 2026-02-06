@@ -1,20 +1,20 @@
 import type {
   ForgotPasswordRequest,
   ForgotPasswordResponse,
-  IRegisterData,
-  IRegisterResponse,
   LoginData,
   LoginResponse,
   ResendOtpResponse,
   ResetPasswordData,
   ResetPasswordResponse,
+  SignupUserData,
+  SignUpUserResponse,
   VerifyOtpData,
   VerifyOtpResponse,
-} from "../DTO/services/authService.dto.js";
+} from "../DTO/services/userService.dto.js";
 
-export interface IAuthService {
-  register(data: IRegisterData): Promise<IRegisterResponse>;
-  verifyOtp(data: VerifyOtpData): Promise<VerifyOtpResponse>;
+export interface IUserService {
+  userSignUp(data: SignupUserData): Promise<SignUpUserResponse>
+  verifyOtp(data: VerifyOtpData): Promise<VerifyOtpResponse>
   login(data: LoginData): Promise<LoginResponse>
   resendOtp(data: string): Promise<ResendOtpResponse>
   resetPassword(data: ResetPasswordData): Promise<ResetPasswordResponse>

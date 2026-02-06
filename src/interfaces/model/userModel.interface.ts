@@ -1,12 +1,13 @@
-import { Document, type ObjectId } from "mongoose";
+import { Document, Types} from "mongoose";
 
 export interface IUser extends Document {
-  accountId: ObjectId;
+  _id: Types.ObjectId; 
   username: string;
+  email:string;
   phone: number;
+  password:string;
   image: string;
   status:"Active" | "Blocked";
-  isVerified: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }

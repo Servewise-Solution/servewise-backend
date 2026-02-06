@@ -11,6 +11,7 @@ export const validate =
       next();
     } catch (error: any) {
         const issues = error.errors || error.issues;
+        console.log("issues",issues)
         const firstError = issues?.[0]?.message || "Invalid request data";
         res
           .status(HTTP_STATUS.BAD_REQUEST)
