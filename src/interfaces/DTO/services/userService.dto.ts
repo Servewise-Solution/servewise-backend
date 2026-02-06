@@ -1,21 +1,26 @@
-import type { Types } from "mongoose";
 import type { IUser } from "../../model/userModel.interface.js";
 
-export interface IRegisterData {
+
+export interface SignupUserData {
   username: string;
   email: string;
   password: string;
   phone: number;
 }
 
-export interface IRegisterResponse {
+export interface SignUpUserResponse {
   success: boolean;
   message: string;
   data?: {
-    email?: string;
+    email: string;
   };
 }
 
+export interface ResendOtpResponse {
+  success: boolean;
+  message: string;
+  email?: string;
+}
 
 export interface VerifyOtpData {
   otp: string;
@@ -28,43 +33,21 @@ export interface VerifyOtpResponse {
   message: string;
 }
 
-export interface PendingUserData {
-  username: string;
-  email: string;
-  password: string; 
-  phone: number;
-  role: "USER" | "PROVIDER" | "ADMIN";
-}
-
-export interface LoginUserData {
-  _id: Types.ObjectId;
-  username: string;
-  email: string;
-  phone: number;
-  image: string;
-  status: "Active" | "Blocked";
-}
-
 export interface LoginResponse {
   success: boolean;
   message: string;
-  data?: LoginUserData;
+  data?: Pick<
+    IUser,
+    "_id" | "username" | "email" | "phone" | "image" | "status"
+  >;
   access_token?: string;
   refresh_token?: string;
 }
-
 
 export interface LoginData {
   email: string;
   password: string;
 }
-
-export interface ResendOtpResponse {
-  success: boolean;
-  message: string;
-  email?: string;
-}
-
 
 export interface ForgotPasswordRequest {
   email: string;
@@ -84,4 +67,30 @@ export interface ResetPasswordData {
 export interface ResetPasswordResponse {
   success: boolean;
   message: string;
+}
+
+export interface ToggleUserStatusResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    userId: string;
+    status: string;
+  };
+}
+export interface AddMoneyResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    checkoutUrl: string;
+    sessionId: string;
+    requiresPayment: boolean;
+  };
+}
+
+export interface PaginatedUserDto {
+  _id: string;
+  username: string;
+  email: string;
+  phone: number;
+  status: "Active" | "Blocked";
 }
