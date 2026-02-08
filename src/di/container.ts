@@ -31,6 +31,8 @@ import type { IAdminRepository } from "../interfaces/repository/admin.repository
 import { AdminRepository } from "../repositories/admin.repository.js";
 import type { IAdminService } from "../interfaces/services/admin.service.js";
 import { AdminService } from "../services/admin.service.js";
+import type { IAuthService } from "../interfaces/services/auth.service.js";
+import { AuthService } from "../services/auth.service.js";
 
 container.registerSingleton<IApp>("IApp", App);
 container.registerSingleton<IDataBase>("IDataBase", MongoDBConnection);
@@ -44,6 +46,7 @@ container.registerSingleton<IEmailService>("IEmailService",EmailService)
 container.registerSingleton<IemailTemplateService>("IemailTemplateService",EmailTemplateService);
 container.registerSingleton<IAdminRepository>("IAdminRepository",AdminRepository)
 container.registerSingleton<IAdminService>("IAdminService",AdminService)
+container.registerSingleton<IAuthService>("IAuthService",AuthService)
   
 
 
