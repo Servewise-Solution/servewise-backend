@@ -8,7 +8,7 @@ import type { IPasswordHasher } from "../interfaces/infra/passwordService.interf
 import type { IJwtService } from "../interfaces/infra/jwtService.interface.js";
 import { OTP_PREFIX, OtpPurpose } from "../constants/otp.constant.js";
 import { config } from "../config/env.js";
-import type { ForgotPasswordRequest, ForgotPasswordResponse, LoginData, LoginResponse, ResendOtpResponse, ResetPasswordData, ResetPasswordResponse, SignupUserData, SignUpUserResponse, VerifyOtpData, VerifyOtpResponse } from "../interfaces/DTO/services/userService.dto.js";
+import type { ForgotPasswordRequest, ForgotPasswordResponse, LoginData, LoginResponse, PaginatedUserDto, ResendOtpResponse, ResetPasswordData, ResetPasswordResponse, SignupUserData, SignUpUserResponse, VerifyOtpData, VerifyOtpResponse } from "../interfaces/DTO/services/userService.dto.js";
 import type { CreateUser } from "../interfaces/DTO/repository/userRepository.dto.js";
 import { Roles } from "../constants/roles.js";
 
@@ -438,4 +438,77 @@ export class UserService implements IUserService {
       };
     }
   }
+
+  async getAllUsers(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      users: PaginatedUserDto[];
+      pagination: {
+        total: number;
+        page: number;
+        pages: number;
+        limit: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    };
+  }> {
+    try {
+      console.log("Function fetching all the users");
+  
+      const repoOptions: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+      } = {};
+  
+      if (options.page !== undefined) repoOptions.page = options.page;
+      if (options.limit !== undefined) repoOptions.limit = options.limit;
+      if (options.search !== undefined) repoOptions.search = options.search;
+      if (options.status !== undefined) repoOptions.status = options.status;
+  
+      const result = await this._userRepository.getAllUsers(repoOptions);
+  
+      console.log("result from the user service:", result);
+  
+      const users: PaginatedUserDto[] = result.data.map((user) => ({
+        _id: user._id.toString(), 
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        status: user.status,
+      }));
+  
+      return {
+        success: true,
+        message: "Users fetched successfully",
+        data: {
+          users,
+          pagination: {
+            total: result.total,
+            page: result.page,
+            pages: result.pages,
+            limit: result.limit,
+            hasNextPage: result.page < result.pages,
+            hasPrevPage: result.page > 1,
+          },
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      return {
+        success: false,
+        message: "Something went wrong while fetching users",
+      };
+    }
+  }
+  
+  
 }

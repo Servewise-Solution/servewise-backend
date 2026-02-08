@@ -40,6 +40,14 @@ export class UserRoutes {
       "/reset-password",validate(resetPasswordSchema),
       userController.resetPassword.bind(userController)
     );
+    this.router.get(
+      "/",
+      userController.getAllUsers.bind(userController)
+    );
+    this.router.get(
+      "/logout",
+      userController.logout.bind(userController)
+    );
   }
 
   public getRouter() {

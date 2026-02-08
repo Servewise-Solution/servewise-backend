@@ -255,4 +255,80 @@ export class UserController {
         .json(createErrorResponse("Internal server error"));
     }
   }
+
+  async getAllUsers(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("function fetching all the users");
+  
+      const repoOptions: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+      } = {};
+  
+      if (req.query.page !== undefined) {
+        repoOptions.page = parseInt(req.query.page as string, 10);
+      }
+  
+      if (req.query.limit !== undefined) {
+        repoOptions.limit = parseInt(req.query.limit as string, 10);
+      }
+  
+      if (req.query.search !== undefined) {
+        repoOptions.search = req.query.search as string;
+      }
+  
+      if (req.query.status !== undefined) {
+        repoOptions.status = req.query.status as string;
+      }
+  
+      const serviceResponse = await this._userService.getAllUsers(repoOptions);
+  
+      console.log(
+        "result from the fetching all users controller:",
+        serviceResponse
+      );
+  
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch users"
+            )
+          );
+      }
+    } catch (error) {
+      console.error("Error in getAllUsers controller:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Error fetching users"));
+    }
+  }
+  
+  async logout(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering the logout function from the user controller");
+      res.clearCookie("refresh_token", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+      });
+      res
+        .status(HTTP_STATUS.OK)
+        .json(createSuccessResponse(null, "Logged out successfully"));
+    } catch (error) {
+      console.log("error occured while user logging out:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error occurred"));
+    }
+  }
 }
