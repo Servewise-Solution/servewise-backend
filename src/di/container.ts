@@ -27,6 +27,10 @@ import { UserRepository } from "../repositories/user.repository.js";
 import { UserService } from "../services/user.service.js";
 import type { IUserService } from "../interfaces/services/user.service.js";
 import type { IUserRepository } from "../interfaces/repository/user.repository.js";
+import type { IAdminRepository } from "../interfaces/repository/admin.repository.js";
+import { AdminRepository } from "../repositories/admin.repository.js";
+import type { IAdminService } from "../interfaces/services/admin.service.js";
+import { AdminService } from "../services/admin.service.js";
 
 container.registerSingleton<IApp>("IApp", App);
 container.registerSingleton<IDataBase>("IDataBase", MongoDBConnection);
@@ -38,6 +42,8 @@ container.registerSingleton<IUserRepository>("IUserRepository",UserRepository)
 container.registerSingleton<IUserService>("IUserService",UserService)
 container.registerSingleton<IEmailService>("IEmailService",EmailService)
 container.registerSingleton<IemailTemplateService>("IemailTemplateService",EmailTemplateService);
+container.registerSingleton<IAdminRepository>("IAdminRepository",AdminRepository)
+container.registerSingleton<IAdminService>("IAdminService",AdminService)
   
 
 

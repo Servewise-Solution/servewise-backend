@@ -4,13 +4,17 @@ import { UserController } from "../controllers/user.controller.js";
 
 import { forgotPasswordSchema, loginSchema, registerSchema, resendOtpSchema, resetPasswordSchema, verifyOtpSchema } from "../validations/auth.validation.js";
 import { validate } from "../middlewares/zodValidate.middleware.js";
+import { AuthMiddleware } from "../middlewares/auth.middleware.js";
+import { Roles } from "../constants/roles.js";
 
 
 export class UserRoutes {
   private router: Router;
+  private authMiddleware: AuthMiddleware;
 
   constructor() {
     this.router = express.Router();
+    this.authMiddleware = AuthMiddleware.getInstance();
     this.setupRoutes();
   }
 
@@ -41,11 +45,11 @@ export class UserRoutes {
       userController.resetPassword.bind(userController)
     );
     this.router.get(
-      "/",
+      "/",this.authMiddleware.authenticate(Roles.ADMIN),
       userController.getAllUsers.bind(userController)
     );
     this.router.get(
-      "/logout",
+      "/logout",this.authMiddleware.authenticate(Roles.USER),
       userController.logout.bind(userController)
     );
   }
