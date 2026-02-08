@@ -2,10 +2,14 @@
 import type { Application, Request, Response } from "express"; 
 import { UserRoutes } from "./user.routes.js";
 import { AdminRoutes } from "./admin.routes.js";
+import { AuthRoutes } from "./auth.routes.js";
 
 export class RouteRegistry {
 
   public static registerRoutes(app: Application): void { 
+    const authRoutes = new AuthRoutes();
+    app.use("/api/auth", authRoutes.getRouter());
+
     const userRoutes = new UserRoutes();
     app.use("/api/user", userRoutes.getRouter());
 
