@@ -17,15 +17,16 @@ import type { IRedisService } from "../interfaces/infra/redisService.interface.j
 
 import type { IEmailService } from "../interfaces/infra/emailService.interface.js";
 import { EmailService } from "../services/email.service.js";
-import type { IAuthService } from "../interfaces/services/auth.service.js";
-import { AuthService } from "../services/auth.service.js";
+
 
 import type { IAccountRepository } from "../interfaces/repository/account.repository.js";
 import { EmailTemplateService } from "../services/emailTemplate.service.js";
 import type { IemailTemplateService } from "../interfaces/infra/emailTemplate.interface.js";
-import type { IUserRepository } from "../interfaces/repository/auth.repository.js";
+
 import { UserRepository } from "../repositories/user.repository.js";
-import { AccountRepository } from "../repositories/auth.repository.js";
+import { UserService } from "../services/user.service.js";
+import type { IUserService } from "../interfaces/services/user.service.js";
+import type { IUserRepository } from "../interfaces/repository/user.repository.js";
 
 container.registerSingleton<IApp>("IApp", App);
 container.registerSingleton<IDataBase>("IDataBase", MongoDBConnection);
@@ -33,10 +34,9 @@ container.registerSingleton<IPasswordHasher>("IPasswordHasher", PasswordHasher);
 container.registerSingleton<IJwtService>("IJwtService", JWTService);
 container.registerSingleton<IOTPService>("IOTPService", OTPService);
 container.registerSingleton<IRedisService>("IRedisService", RedisService);
-container.registerSingleton<IUserRepository>("IAuthRepository",UserRepository)
-container.registerSingleton<IAuthService>("IAuthService",AuthService)
+container.registerSingleton<IUserRepository>("IUserRepository",UserRepository)
+container.registerSingleton<IUserService>("IUserService",UserService)
 container.registerSingleton<IEmailService>("IEmailService",EmailService)
-container.registerSingleton<IAccountRepository>("IAccountRepository",AccountRepository)
 container.registerSingleton<IemailTemplateService>("IemailTemplateService",EmailTemplateService);
   
 

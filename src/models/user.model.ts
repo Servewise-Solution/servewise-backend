@@ -1,15 +1,18 @@
 import mongoose, { Schema } from "mongoose";
 import type { IUser } from "../interfaces/model/userModel.interface.js";
 
-const userSchema = new Schema<IUser>(
+
+const userSchema: Schema<IUser> = new Schema(
   {
-    accountId: {
-      type: Schema.Types.ObjectId,
-      ref: "account",
-      required: true,
-      unique: true,
-    },
     username: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+    },
+    password: {
       type: String,
       required: true,
     },
@@ -17,19 +20,17 @@ const userSchema = new Schema<IUser>(
       type: Number,
       required: true,
     },
-    isVerified: {
-      type: Boolean,
-      default: false,
-    },
-    image: {
-      type: String,
-    },
     status: {
       type: String,
       enum: ["Active", "Blocked"],
     },
+    image: {
+      type: String,
+    },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
-export const userModel = mongoose.model("user", userSchema);
+const User = mongoose.model<IUser>("User", userSchema);
+
+export default User;

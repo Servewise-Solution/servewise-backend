@@ -1,12 +1,10 @@
 
 import { injectable } from "tsyringe";
-import { BaseRepository } from "./base.repository.js";
 import type { IUser } from "../interfaces/model/userModel.interface.js";
-
-import type { CreateUser } from "../interfaces/DTO/repository/authRepository.dto.js";
-import { userModel } from "../models/user.model.js";
-import type { IUserRepository } from "../interfaces/repository/auth.repository.js";
-import type { ObjectId, Types } from "mongoose";
+import type { IUserRepository } from "../interfaces/repository/user.repository.js";
+import User from "../models/user.model.js";
+import { BaseRepository } from "./base.repository.js";
+import type { CreateUser } from "../interfaces/DTO/repository/userRepository.dto.js";
 
 @injectable()
 export class UserRepository
@@ -14,7 +12,7 @@ export class UserRepository
   implements IUserRepository
 {
   constructor() {
-    super(userModel);
+    super(User);
   }
   async createUser(userData: CreateUser): Promise<IUser> {
     try {
@@ -30,14 +28,30 @@ export class UserRepository
     }
   }
 
-  async findByAccountId(accountId: Types.ObjectId): Promise<IUser | null> {
+  async findByEmail(email: string): Promise<IUser | null> {
     try {
-      const userData = await this.findOne({accountId} as any);
+      const userData = await this.findOne({ email });
       console.log("userData from user repository:", userData);
       return userData;
     } catch (error) {
       console.log("error occured while fetching the user:", error);
       throw new Error("An error occurred while retrieving the user");
+    }
+  }
+
+  async updatePassword(email: string, hashedPassword: string): Promise<void> {
+    try {
+      const result = await this.updateOne(
+        { email },
+        { password: hashedPassword }
+      );
+
+      if (!result) {
+        throw new Error("Failed to update password or user not found");
+      }
+    } catch (error) {
+      console.log("Error occurred while updating password:", error);
+      throw new Error("An error occurred while updating the password");
     }
   }
 }
