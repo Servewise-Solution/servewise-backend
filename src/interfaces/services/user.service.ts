@@ -1,3 +1,4 @@
+import type { GoogleAuthRequest, GoogleAuthResponse } from "../DTO/services/googleAuth.dto.js";
 import type {
   ForgotPasswordRequest,
   ForgotPasswordResponse,
@@ -9,6 +10,7 @@ import type {
   ResetPasswordResponse,
   SignupUserData,
   SignUpUserResponse,
+  ToggleUserStatusResponse,
   VerifyOtpData,
   VerifyOtpResponse,
 } from "../DTO/services/userService.dto.js";
@@ -42,4 +44,6 @@ export interface IUserService {
       };
     };
   }>
+  toggleUserStatus(userId: string): Promise<ToggleUserStatusResponse>
+  googleAuth(data: GoogleAuthRequest): Promise<GoogleAuthResponse>;
 }

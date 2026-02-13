@@ -17,7 +17,9 @@ function validateEnvVars() {
     "EMAIL_PASS",
     "EMAIL_USER",
     "OTP_EXPIRY_SECONDS",
-    "NODE_ENV"
+    "NODE_ENV",
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET"
   ];
 
   requiredEnvVars.forEach((envVar) => {
@@ -45,5 +47,7 @@ export const config: IConfig = {
   EMAIL_USER: process.env.EMAIL_USER as string,
   EMAIL_PASS: process.env.EMAIL_PASS as string,
   OTP_EXPIRY_SECONDS: Number(process.env.OTP_EXPIRY_SECONDS) || 60,
-  NODE_ENV:process.env.NODE_ENV as string
+  NODE_ENV:process.env.NODE_ENV as string,
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID as string || "",
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET as string || "",
 };

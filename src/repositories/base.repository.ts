@@ -90,7 +90,6 @@ export class BaseRepository<T extends Document> {
         query = query.populate(populateOption);
       });
     }
-
     return await query.exec();
   }
 
