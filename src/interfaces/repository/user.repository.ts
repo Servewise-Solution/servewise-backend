@@ -18,4 +18,9 @@ export interface IUserRepository {
     limit: number;
     pages: number;
   }>
+  blockUser(
+    userId: string,
+    newStatus: "Active" | "Blocked"
+  ): Promise<IUser>
+  findById(id: string): Promise<IUser | null>
 }

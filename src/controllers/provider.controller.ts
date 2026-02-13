@@ -8,17 +8,18 @@ import {
 } from "../utils/responseHelper.utils.js";
 import { MESSAGES } from "../constants/messages.js";
 import { config } from "../config/env.js";
+import type { IProviderService } from "../interfaces/services/provider.service.js";
 
 @injectable()
-export class UserController {
-  constructor(@inject("IUserService") private _userService: IUserService) {}
+export class ProviderController {
+  constructor(@inject("IProviderService") private _providerService: IProviderService) {}
   async register(req: Request, res: Response): Promise<void> {
     try {
       console.log("entering to the register function in userController");
       const data = req.body;
       console.log("data:", data);
 
-      const serviceResponse = await this._userService.userSignUp(data);
+      const serviceResponse = await this._providerService.providerSignUp(data);
       console.log("response in register:", serviceResponse);
 
       if (serviceResponse.success) {
@@ -53,7 +54,7 @@ export class UserController {
       const data = req.body;
       console.log("userData in verifyOtp controller:", data);
 
-      const serviceResponse = await this._userService.verifyOtp(data);
+      const serviceResponse = await this._providerService.verifyOtp(data);
       console.log("response in verifyOtp controller:", serviceResponse);
 
       if (serviceResponse.success) {
@@ -98,7 +99,7 @@ export class UserController {
   async resendOtp(req: Request, res: Response): Promise<void> {
     try {
       const { email } = req.body;
-      const serviceResponse = await this._userService.resendOtp(email);
+      const serviceResponse = await this._providerService.resendOtp(email);
 
       if (serviceResponse.success) {
         res
@@ -133,7 +134,7 @@ export class UserController {
   async forgotPassword(req: Request, res: Response): Promise<void> {
     try {
       const { email } = req.body;
-      const serviceResponse = await this._userService.forgotPassword({ email });
+      const serviceResponse = await this._providerService.forgotPassword({ email });
 
       if (serviceResponse.success) {
         res
@@ -171,7 +172,7 @@ export class UserController {
       console.log("Entering resetPassword function in userController");
       const { email, password } = req.body;
 
-      const serviceResponse = await this._userService.resetPassword({
+      const serviceResponse = await this._providerService.resetPassword({
         email,
         password,
       });
@@ -210,7 +211,7 @@ export class UserController {
       console.log("entering the user login function in usercontroller");
       const data = req.body;
 
-      const serviceResponse = await this._userService.login(data);
+      const serviceResponse = await this._providerService.login(data);
       console.log("response from the login controller", serviceResponse);
 
       if (serviceResponse.success) {
@@ -256,7 +257,7 @@ export class UserController {
     }
   }
 
-  async getAllUsers(req: Request, res: Response): Promise<void> {
+  async getAllProviders(req: Request, res: Response): Promise<void> {
     try {
       console.log("function fetching all the users");
 
@@ -283,7 +284,7 @@ export class UserController {
         repoOptions.status = req.query.status as string;
       }
 
-      const serviceResponse = await this._userService.getAllUsers(repoOptions);
+      const serviceResponse = await this._providerService.getAllProviders(repoOptions);
 
       console.log(
         "result from the fetching all users controller:",
@@ -313,7 +314,7 @@ export class UserController {
     }
   }
 
-  async toggleUserStatus(req: Request, res: Response): Promise<void> {
+  async toggleProviderStatus(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;
       if (typeof userId !== "string") {
@@ -323,7 +324,7 @@ export class UserController {
         return;
       }
 
-      const serviceResponse = await this._userService.toggleUserStatus(userId);
+      const serviceResponse = await this._providerService.toggleProviderStatus(userId);
 
       if (serviceResponse.success) {
         res
@@ -351,50 +352,6 @@ export class UserController {
     }
   }
 
-  async googleAuth(req: Request, res: Response): Promise<void> {
-    try {
-      const { token } = req.body;
-  
-      if (!token) {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(createErrorResponse("Google token is required"));
-        return;
-      }
-  
-      const serviceResponse = await this._userService.googleAuth({ token });
-  
-      if (serviceResponse.success) {
-        res.cookie("refresh_token", serviceResponse.refresh_token, {
-          httpOnly: true,
-          secure: config.NODE_ENV === "production",
-          sameSite: config.NODE_ENV === "production" ? "strict" : "lax",
-          maxAge: config.REFRESH_TOKEN_COOKIE_MAX_AGE,
-        });
-  
-        res.status(HTTP_STATUS.OK).json(
-          createSuccessResponse(
-            {
-              user: serviceResponse.data,
-              access_token: serviceResponse.access_token,
-            },
-            serviceResponse.message
-          )
-        );
-      } else {
-        const statusCode = serviceResponse.message?.includes("blocked")
-          ? HTTP_STATUS.FORBIDDEN
-          : HTTP_STATUS.UNAUTHORIZED;
-  
-        res.status(statusCode).json(createErrorResponse(serviceResponse.message));
-      }
-    } catch (error) {
-      console.error("Error in googleAuth controller:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal server error"));
-    }
-  }
   async logout(req: Request, res: Response): Promise<void> {
     try {
       console.log("entering the logout function from the user controller");
@@ -413,4 +370,5 @@ export class UserController {
         .json(createErrorResponse("Internal server error occurred"));
     }
   }
+  
 }
