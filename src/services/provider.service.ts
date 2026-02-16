@@ -1,6 +1,4 @@
 import { inject, injectable } from "tsyringe";
-import type { IUserService } from "../interfaces/services/user.service.js";
-import type { IUserRepository } from "../interfaces/repository/user.repository.js";
 import type { IOTPService, OtpVerificationResult } from "../interfaces/infra/otpService.interface.js";
 import type { IRedisService } from "../interfaces/infra/redisService.interface.js";
 import type { IEmailService } from "../interfaces/infra/emailService.interface.js";
@@ -8,22 +6,21 @@ import type { IPasswordHasher } from "../interfaces/infra/passwordService.interf
 import type { IJwtService } from "../interfaces/infra/jwtService.interface.js";
 import { OTP_PREFIX, OtpPurpose } from "../constants/otp.constant.js";
 import { config } from "../config/env.js";
-import type { ForgotPasswordRequest, ForgotPasswordResponse, LoginData, LoginResponse, PaginatedUserDto, ResendOtpResponse, ResetPasswordData, ResetPasswordResponse, SignupUserData, SignUpUserResponse, ToggleUserStatusResponse, VerifyOtpData, VerifyOtpResponse } from "../interfaces/DTO/services/userService.dto.js";
-import type { CreateUser } from "../interfaces/DTO/repository/userRepository.dto.js";
 import { Roles } from "../constants/roles.js";
-import type { IGoogleAuthService } from "../interfaces/infra/googleAuthService.interface.js";
-import type { GoogleAuthRequest, GoogleAuthResponse } from "../interfaces/DTO/services/googleAuth.dto.js";
+import type { IProviderService } from "../interfaces/services/provider.service.js";
+import type { ForgotPasswordRequest, ForgotPasswordResponse, LoginData, LoginResponse, PaginatedProviderDto, ResendOtpResponse, ResetPasswordData, ResetPasswordResponse, SignupProviderData, SignUpProviderResponse, ToggleProviderStatusResponse, VerifyOtpData, VerifyOtpResponse } from "../interfaces/DTO/services/providerService.dto.js";
+import type { IProviderRepository } from "../interfaces/repository/provider.repository.js";
+import type { CreateProvider } from "../interfaces/DTO/repository/providerRepository.dto.js";
 
 @injectable()
-export class UserService implements IUserService {
+export class ProviderService implements IProviderService {
   constructor(
-    @inject("IUserRepository") private _userRepository: IUserRepository,
+    @inject("IProviderRepository") private _providerRepository: IProviderRepository,
     @inject("IOTPService") private _otpService: IOTPService,
     @inject("IRedisService") private _redisService: IRedisService,
     @inject("IEmailService") private _emailService: IEmailService,
     @inject("IPasswordHasher") private _passwordService: IPasswordHasher,
     @inject("IJwtService") private _jwtService: IJwtService,
-    @inject("IGoogleAuthService") private _googleAuthService: IGoogleAuthService
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -80,7 +77,7 @@ export class UserService implements IUserService {
     };
   }
 
-  async userSignUp(data: SignupUserData): Promise<SignUpUserResponse> {
+  async providerSignUp(data: SignupProviderData): Promise<SignUpProviderResponse> {
     try {
       console.log(
         "entering to the usersignup function in the userauth service"
@@ -89,7 +86,7 @@ export class UserService implements IUserService {
 
       const { email, password } = data;
 
-      const existingUser = await this._userRepository.findByEmail(email);
+      const existingUser = await this._providerRepository.findByEmail(email);
       if (existingUser) {
         return {
           message: "User already exists, please login",
@@ -150,7 +147,6 @@ export class UserService implements IUserService {
       throw new Error("An error occurred during the user signup");
     }
   }
-
   async verifyOtp(data: VerifyOtpData): Promise<VerifyOtpResponse> {
     try {
       console.log("entering to the verifyotp function in userService");
@@ -158,7 +154,7 @@ export class UserService implements IUserService {
       const { otp, email, purpose } = data;
 
       if (OtpPurpose.REGISTRATION === purpose) {
-        const pendingUser = await this._redisService.getObject<CreateUser>(
+        const pendingUser = await this._redisService.getObject<CreateProvider>(
           `pending_user:${email}`
         );
 
@@ -184,7 +180,7 @@ export class UserService implements IUserService {
 
         const userData = { ...pendingUser, status: "Active" as const };
 
-        const newUser = await this._userRepository.createUser(userData);
+        const newUser = await this._providerRepository.createProvider(userData);
 
       
 
@@ -198,7 +194,7 @@ export class UserService implements IUserService {
         };
       } else if (OtpPurpose.PASSWORD_RESET === purpose) {
         console.log("password resetting in the userAuthService");
-        const user = await this._userRepository.findByEmail(email);
+        const user = await this._providerRepository.findByEmail(email);
         console.log("user from the password resetting:", user);
 
         if (!user) {
@@ -229,12 +225,11 @@ export class UserService implements IUserService {
       };
     }
   }
-
   async resendOtp(data: string): Promise<ResendOtpResponse> {
     try {
       console.log("entering resendotp function in the userservice");
 
-      const user = await this._userRepository.findByEmail(data);
+      const user = await this._providerRepository.findByEmail(data);
 
       if (user) {
         const newOtp = await this.generateAndSendOtp(
@@ -250,7 +245,7 @@ export class UserService implements IUserService {
         };
       }
 
-      const pendingUser = await this._redisService.getObject<CreateUser>(
+      const pendingUser = await this._redisService.getObject<CreateProvider>(
         `pending_user:${data}`
       );
 
@@ -286,7 +281,6 @@ export class UserService implements IUserService {
       };
     }
   }
-
   async forgotPassword(
     data: ForgotPasswordRequest
   ): Promise<ForgotPasswordResponse> {
@@ -294,7 +288,7 @@ export class UserService implements IUserService {
       console.log("Entering forgotPassword in userService");
       const { email } = data;
 
-      const user = await this._userRepository.findByEmail(email);
+      const user = await this._providerRepository.findByEmail(email);
 
       if (!user) {
         return {
@@ -335,7 +329,7 @@ export class UserService implements IUserService {
       console.log("Entering resetPassword in userService");
       const { email, password } = data;
 
-      const user = await this._userRepository.findByEmail(email);
+      const user = await this._providerRepository.findByEmail(email);
       console.log("userData in resetPassword:", user);
 
       if (!user) {
@@ -354,7 +348,7 @@ export class UserService implements IUserService {
 
       const hashedPassword = await this._passwordService.hash(password);
 
-      await this._userRepository.updatePassword(email, hashedPassword);
+      await this._providerRepository.updatePassword(email, hashedPassword);
 
       const redisKey = this.getOtpRedisKey(email, OtpPurpose.PASSWORD_RESET);
       await this._redisService.delete(redisKey);
@@ -377,7 +371,7 @@ export class UserService implements IUserService {
       console.log("entering to the login credentials verifying in service");
       const { email, password } = data;
 
-      const user = await this._userRepository.findByEmail(email);
+      const user = await this._providerRepository.findByEmail(email);
       console.log("user", user);
 
       if (!user) {
@@ -411,12 +405,12 @@ export class UserService implements IUserService {
 
       const access_token = this._jwtService.generateAccessToken(
         userId,
-        Roles.USER
+        Roles.PROVIDER
       );
 
       const refresh_token = this._jwtService.generateRefreshToken(
         userId,
-        Roles.USER
+        Roles.PROVIDER
       );
 
       return {
@@ -429,7 +423,6 @@ export class UserService implements IUserService {
           username: user.username,
           email: user.email,
           phone: user.phone,
-          image: user.image,
           status: user.status,
         },
       };
@@ -442,7 +435,7 @@ export class UserService implements IUserService {
     }
   }
 
-  async getAllUsers(options: {
+  async getAllProviders(options: {
     page?: number;
     limit?: number;
     search?: string;
@@ -451,7 +444,7 @@ export class UserService implements IUserService {
     success: boolean;
     message: string;
     data?: {
-      users: PaginatedUserDto[];
+      users: PaginatedProviderDto[];
       pagination: {
         total: number;
         page: number;
@@ -477,11 +470,11 @@ export class UserService implements IUserService {
       if (options.search !== undefined) repoOptions.search = options.search;
       if (options.status !== undefined) repoOptions.status = options.status;
   
-      const result = await this._userRepository.getAllUsers(repoOptions);
+      const result = await this._providerRepository.getAllProviders(repoOptions);
   
       console.log("result from the user service:", result);
   
-      const users: PaginatedUserDto[] = result.data.map((user) => ({
+      const users: PaginatedProviderDto[] = result.data.map((user) => ({
         _id: user._id.toString(), 
         username: user.username,
         email: user.email,
@@ -513,9 +506,9 @@ export class UserService implements IUserService {
     }
   }
   
-  async toggleUserStatus(userId: string): Promise<ToggleUserStatusResponse> {
+  async toggleProviderStatus(userId: string): Promise<ToggleProviderStatusResponse> {
     try {
-      const user = await this._userRepository.findById(userId);
+      const user = await this._providerRepository.findById(userId);
       console.log("User fetched from repository:", user);
 
       if (!user) {
@@ -526,7 +519,7 @@ export class UserService implements IUserService {
       }
 
       const newStatus = user.status === "Active" ? "Blocked" : "Active";
-      const response = await this._userRepository.blockUser(userId, newStatus);
+      const response = await this._providerRepository.blockProvider(userId, newStatus);
       console.log(
         "Response after toggling user status from the user repository:",
         response
@@ -548,67 +541,5 @@ export class UserService implements IUserService {
       };
     }
   }
-  async googleAuth(data: GoogleAuthRequest): Promise<GoogleAuthResponse> {
-    try {
-      const { token } = data;
-      
-      const googleUserInfo = await this._googleAuthService.verifyGoogleToken(token);
-      if (!googleUserInfo || !googleUserInfo.email_verified) {
-        return { success: false, message: "Invalid Google token" };
-      }
   
-      let user = await this._userRepository.findByEmail(googleUserInfo.email);
-  
-      if (user) {
-        if (user.status !== "Active") {
-          return {
-            success: false,
-            message: "Your account has been blocked. Please contact support.",
-          };
-        }
-      } else {
-  
-        const randomPassword = await this._passwordService.hash(
-          Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8)
-        );
-        
-        const username: string = googleUserInfo.name ?? googleUserInfo.email.split("@")[0];
-  
-        const userData: CreateUser = {
-          username: username,
-          email: googleUserInfo.email,
-          password: randomPassword,
-          phone: 0,
-          status: "Active",
-        };
-  
-        user = await this._userRepository.createUser(userData);
-      }
-  
-      const userId = String(user._id);
-      const access_token = this._jwtService.generateAccessToken(userId, Roles.USER);
-      const refresh_token = this._jwtService.generateRefreshToken(userId, Roles.USER);
-  
-      return {
-        success: true,
-        message: "Google authentication successful",
-        access_token,
-        refresh_token,
-        data: {
-          _id: user._id.toString(),
-          username: user.username,
-          email: user.email,
-          phone: user.phone,
-          image: user.image,
-          status: user.status,
-        },
-      };
-    } catch (error) {
-      console.error("Error during Google authentication:", error);
-      return {
-        success: false,
-        message: "An error occurred during Google authentication",
-      };
-    }
-  }
 }

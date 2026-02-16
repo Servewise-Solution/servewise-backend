@@ -33,6 +33,12 @@ import type { IAdminService } from "../interfaces/services/admin.service.js";
 import { AdminService } from "../services/admin.service.js";
 import type { IAuthService } from "../interfaces/services/auth.service.js";
 import { AuthService } from "../services/auth.service.js";
+import type { IGoogleAuthService } from "../interfaces/infra/googleAuthService.interface.js";
+import { GoogleAuthService } from "../services/googleAuth.service.js";
+import type { IProviderRepository } from "../interfaces/repository/provider.repository.js";
+import { ProviderRepository } from "../repositories/provider.repository.js";
+import type { IProviderService } from "../interfaces/services/provider.service.js";
+import { ProviderService } from "../services/provider.service.js";
 
 container.registerSingleton<IApp>("IApp", App);
 container.registerSingleton<IDataBase>("IDataBase", MongoDBConnection);
@@ -47,6 +53,11 @@ container.registerSingleton<IemailTemplateService>("IemailTemplateService",Email
 container.registerSingleton<IAdminRepository>("IAdminRepository",AdminRepository)
 container.registerSingleton<IAdminService>("IAdminService",AdminService)
 container.registerSingleton<IAuthService>("IAuthService",AuthService)
+container.register<IGoogleAuthService>("IGoogleAuthService", {
+    useClass: GoogleAuthService,
+  });
+container.registerSingleton<IProviderRepository>("IProviderRepository",ProviderRepository)  
+container.registerSingleton<IProviderService>("IProviderService",ProviderService)
   
 
 

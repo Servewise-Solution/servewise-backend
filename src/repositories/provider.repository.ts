@@ -1,23 +1,23 @@
 
 import { injectable } from "tsyringe";
 import mongoose from "mongoose";
-import type { IUser } from "../interfaces/model/userModel.interface.js";
-import type { IUserRepository } from "../interfaces/repository/user.repository.js";
-import User from "../models/user.model.js";
 import { BaseRepository } from "./base.repository.js";
-import type { CreateUser } from "../interfaces/DTO/repository/userRepository.dto.js";
+import type { IProvider } from "../interfaces/model/providerModel.interface.js";
+import { Provider } from "../models/provider.model.js";
+import type { CreateProvider } from "../interfaces/DTO/repository/providerRepository.dto.js";
+import type { IProviderRepository } from "../interfaces/repository/provider.repository.js";
 
 
 
 @injectable()
-export class UserRepository
-  extends BaseRepository<IUser>
-  implements IUserRepository
+export class ProviderRepository
+  extends BaseRepository<IProvider>
+  implements IProviderRepository
 {
   constructor() {
-    super(User);
+    super(Provider);
   }
-  async createUser(userData: CreateUser): Promise<IUser> {
+  async createProvider(userData: CreateProvider): Promise<IProvider> {
     try {
       const newUser = await this.create(userData);
       console.log("savedUser from userRepository:", newUser);
@@ -31,7 +31,7 @@ export class UserRepository
     }
   }
 
-  async findByEmail(email: string): Promise<IUser | null> {
+  async findByEmail(email: string): Promise<IProvider | null> {
     try {
       const userData = await this.findOne({ email });
       console.log("userData from user repository:", userData);
@@ -57,13 +57,13 @@ export class UserRepository
       throw new Error("An error occurred while updating the password");
     }
   }
-  async getAllUsers(options: {
+  async getAllProviders(options: {
     page?: number;
     limit?: number;
     search?: string;
     status?: string;
   }): Promise<{
-    data: IUser[];
+    data: IProvider[];
     total: number;
     page: number;
     limit: number;
@@ -74,7 +74,7 @@ export class UserRepository
       const page = options.page;
       const limit = options.limit;
 
-      const filter: mongoose.QueryFilter<IUser> = {};
+      const filter: mongoose.QueryFilter<IProvider> = {};
 
       if (options.search) {
         filter.$or = [
@@ -95,7 +95,7 @@ export class UserRepository
         const result = (await this.find(filter, {
           pagination: { page, limit },
           sort: { createdAt: -1 },
-        })) as { data: IUser[]; total: number };
+        })) as { data: IProvider[]; total: number };
 
         console.log("data fetched from the user repository:", result);
 
@@ -109,7 +109,7 @@ export class UserRepository
       } else {
         const allUsers = (await this.find(filter, {
           sort: { createdAt: -1 },
-        })) as IUser[];
+        })) as IProvider[];
 
         console.log("all categories without pagination:", allUsers);
         return {
@@ -126,10 +126,10 @@ export class UserRepository
     }
   }
 
-  async blockUser(
+  async blockProvider(
     userId: string,
     newStatus: "Active" | "Blocked"
-  ): Promise<IUser> {
+  ): Promise<IProvider> {
     try {
       console.log(`Attempting to update user ${userId} status to ${newStatus}`);
 
@@ -143,10 +143,7 @@ export class UserRepository
         throw new Error("User not found");
       }
 
-      console.log("Successfully updated user status:", {
-        userId: updatedUser._id,
-        newStatus: updatedUser.status,
-      });
+      
 
       return updatedUser;
     } catch (error) {
@@ -155,9 +152,9 @@ export class UserRepository
     }
   }
 
-  async findById(id: string): Promise<IUser | null> {
+  async findById(id: string): Promise<IProvider | null> {
     try {
-      return await User.findById(id).exec();
+      return await Provider.findById(id).exec();
     } catch (error) {
       throw new Error("Error finding designation by ID: " + error);
     }
