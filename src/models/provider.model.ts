@@ -50,7 +50,7 @@ const providerSchema = new Schema<IProvider>(
 
     temporarilyClosed: {
       type: Boolean,
-      default: true,
+      default: false,
     },
 
     subscriptionPlanHistory: {
