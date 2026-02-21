@@ -152,6 +152,67 @@ export class ProviderRepository
     }
   }
 
+  async updateProviderDetails(
+    providerId: string,
+    providerData: Partial<IProvider>
+  ): Promise<IProvider | null> {
+    try {
+      const updatedProvider = await this.updateOne(
+        { _id: providerId },
+        providerData
+      );
+  
+      return updatedProvider;
+    } catch (error) {
+      console.error("Error updating provider:", error);
+      throw new Error("Error updating provider details");
+    }
+  }
+  
+  
+
+  async getAllApplicants(options: { page?: number; limit?: number }): Promise<{
+    data: IProvider[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  }> {
+    try {
+      console.log("entering the function which fetches all the users");
+      const page = options.page || 1;
+      const limit = options.limit || 6;
+
+      const filter: mongoose.QueryFilter<IProvider> = {};
+
+      console.log("filter", filter);
+
+      filter.isVerified = false;
+      filter.status = "Pending";
+
+      const result = (await this.find(filter, {
+        pagination: { page, limit },
+        sort: { createdAt: -1 },
+      })) as { data: IProvider[]; total: number };
+
+      console.log("data fetched from the user repository:", result);
+
+      return {
+        data: result.data,
+        total: result.total,
+        page,
+        limit,
+        pages: Math.ceil(result.total / limit),
+      };
+    } catch (error) {
+      console.error("error occurred while fetching the users:", error);
+      throw new Error("Failed to fetch the users");
+    }
+  }
+
+  
+  
+
   async findById(id: string): Promise<IProvider | null> {
     try {
       return await Provider.findById(id).exec();

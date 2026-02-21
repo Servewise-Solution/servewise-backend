@@ -1,16 +1,19 @@
 import { inject, injectable } from "tsyringe";
 import type { IOTPService, OtpVerificationResult } from "../interfaces/infra/otpService.interface.js";
 import type { IRedisService } from "../interfaces/infra/redisService.interface.js";
-import type { IEmailService } from "../interfaces/infra/emailService.interface.js";
+import type { IEmailService, SendEmailOptions } from "../interfaces/infra/emailService.interface.js";
 import type { IPasswordHasher } from "../interfaces/infra/passwordService.interface.js";
 import type { IJwtService } from "../interfaces/infra/jwtService.interface.js";
 import { OTP_PREFIX, OtpPurpose } from "../constants/otp.constant.js";
 import { config } from "../config/env.js";
 import { Roles } from "../constants/roles.js";
 import type { IProviderService } from "../interfaces/services/provider.service.js";
-import type { ForgotPasswordRequest, ForgotPasswordResponse, LoginData, LoginResponse, PaginatedProviderDto, ResendOtpResponse, ResetPasswordData, ResetPasswordResponse, SignupProviderData, SignUpProviderResponse, ToggleProviderStatusResponse, VerifyOtpData, VerifyOtpResponse } from "../interfaces/DTO/services/providerService.dto.js";
+import type { ForgotPasswordRequest, ForgotPasswordResponse, IApplicantResponse, LoginData, LoginResponse, PaginatedProviderDto, ResendOtpResponse, ResetPasswordData, ResetPasswordResponse, SignupProviderData, SignUpProviderResponse, ToggleProviderStatusResponse, VerifyOtpData, VerifyOtpResponse } from "../interfaces/DTO/services/providerService.dto.js";
 import type { IProviderRepository } from "../interfaces/repository/provider.repository.js";
 import type { CreateProvider } from "../interfaces/DTO/repository/providerRepository.dto.js";
+import type { IProvider } from "../interfaces/model/providerModel.interface.js";
+import type { IAddressRepository } from "../interfaces/repository/address.repository.js";
+
 
 @injectable()
 export class ProviderService implements IProviderService {
@@ -21,6 +24,7 @@ export class ProviderService implements IProviderService {
     @inject("IEmailService") private _emailService: IEmailService,
     @inject("IPasswordHasher") private _passwordService: IPasswordHasher,
     @inject("IJwtService") private _jwtService: IJwtService,
+    @inject("IAddressRepository") private _addressRepository:IAddressRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -178,7 +182,7 @@ export class ProviderService implements IProviderService {
           };
         }
 
-        const userData = { ...pendingUser, status: "Active" as const };
+        const userData = { ...pendingUser};
 
         const newUser = await this._providerRepository.createProvider(userData);
 
@@ -381,13 +385,6 @@ export class ProviderService implements IProviderService {
         };
       }
 
-      if (user.status !== "Active") {
-        return {
-          success: false,
-          message: "Your account has been blocked. Please contact support.",
-        };
-      }
-
       const isPasswordValid = await this._passwordService.verify(
         user.password,
         password
@@ -541,5 +538,224 @@ export class ProviderService implements IProviderService {
       };
     }
   }
+
+  async getAllApplicants(options: { page?: number; limit?: number }): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      users: IApplicantResponse[];
+      pagination: {
+        total: number;
+        page: number;
+        pages: number;
+        limit: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    };
+  }> {
+    try {
+      console.log("Function fetching all the users");
+      const page = options.page || 1;
+      const limit = options.limit || 5;
+
+      const result = await this._providerRepository.getAllApplicants({
+        page,
+        limit,
+      });
+
+      console.log("result from the user service:", result);
+
+      const mappedApplicants: IApplicantResponse[] = result.data.map(
+        (app: IProvider) => ({
+          id: app._id.toString(),
+          username: app.username,
+          email: app.email,
+          phone: app.phone,
+          ownerName: app.ownerName,
+          isVerified: app.isVerified,
+          status: app.status,
+          yearsOfExperience: app.yearsOfExperience,
+      
+          ...(app.premiseImage && { premiseImage: app.premiseImage }),
+          ...(app.serviceAtOwnerPremise !== undefined && {
+            serviceAtOwnerPremise: app.serviceAtOwnerPremise,
+          }),
+          ...(app.companyLicense && { companyLicense: app.companyLicense }),
+          ...(app.bankDetails && { bankDetails: app.bankDetails }),
+      
+          createdAt: app.createdAt!,
+          updatedAt: app.updatedAt!,
+        })
+      );
+      
+      
+      return {
+        success: true,
+        message: "Users fetched successfully",
+        data: {
+          users: mappedApplicants,
+          pagination: {
+            total: result.total,
+            page: result.page,
+            pages: result.pages,
+            limit,
+            hasNextPage: result.page < result.pages,
+            hasPrevPage: page > 1,
+          },
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      return {
+        success: false,
+        message: "Something went wrong while fetching users",
+      };
+    }
+  }
+
+  async saveProviderVerificationDetails(
+    providerId: string,
+    data: any
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      isVerified?: boolean;
+      status?: string;
+    };
+  }> {
+    try {
   
+      const {
+        addressLine,
+        city,
+        state,
+        pincode,
+        location,
+        ...providerData
+      } = data;
+  
+      let addressId = null;
+  
+      if (location?.coordinates) {
+        const address =
+          await this._addressRepository.upsertProviderAddress(
+            providerId,
+            {
+              addressLine,
+              city,
+              state,
+              pincode,
+              location,
+            }
+          );
+  
+        addressId = address._id;
+      }
+
+      const provider =
+        await this._providerRepository.updateProviderDetails(
+          providerId,
+          {
+            ...providerData,
+            addressId,
+            isVerified: false,
+            status: "Pending",
+          }
+        );
+  
+      if (!provider) {
+        return {
+          success: false,
+          message: "Failed to update provider details",
+        };
+      }
+  
+      return {
+        success: true,
+        message: "Documents submitted. Verification within 24 hours.",
+        data: {
+          isVerified: provider.isVerified,
+          status: provider.status,
+        },
+      };
+  
+    } catch (error) {
+      console.error("Error saving provider details:", error);
+      throw new Error("Unable to save provider verification details");
+    }
+  }
+  async acceptProvider(
+    providerId: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const updatedResult =
+        await this._providerRepository.updateProviderDetails(
+          providerId,
+          {
+            isVerified: true,
+            status: "Step2Approved",
+          }
+        );
+  
+      if (!updatedResult) {
+        return {
+          success: false,
+          message: "Provider not found",
+        };
+      }
+  
+      return {
+        success: true,
+        message: "Provider approved successfully",
+      };
+    } catch (error) {
+      console.error("Error approving provider:", error);
+      throw new Error("Unable to approve provider");
+    }
+  }
+
+  
+  async rejectProvider(
+    providerId: string,
+    rejectReason: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const updatedResult =
+        await this._providerRepository.updateProviderDetails(
+          providerId,
+          {
+            isVerified: false,
+            status: "Step2Rejected", 
+            rejectionReason:rejectReason
+          }
+        );
+  
+      if (!updatedResult) {
+        return {
+          success: false,
+          message: "Provider not found",
+        };
+      }
+  
+  
+      const emailOptions: SendEmailOptions = {
+        to: updatedResult.email,
+        subject: "Provider Application Rejected",
+        text: rejectReason,
+        html: `<p>${rejectReason}</p>`,
+      };
+  
+      await this._emailService.sendEmail(emailOptions);
+  
+      return {
+        success: true,
+        message: "Provider rejected successfully",
+      };
+    } catch (error) {
+      console.error("Error rejecting provider:", error);
+      throw new Error("Unable to reject provider");
+    }
+  } 
 }

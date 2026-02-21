@@ -4,6 +4,6 @@ export interface CreateProvider {
     phone: number;
     password: string;
     is_verified?: boolean;
-    status?: "Active" | "Blocked";
+    status?: "Active" | "Blocked" ;
     
   }

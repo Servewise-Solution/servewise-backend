@@ -28,14 +28,15 @@ const providerSchema = new Schema<IProvider>(
       type: String,
     },
 
+    businessName: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
     isVerified: {
       type: Boolean,
       default: false,
-    },
-
-    isActive: {
-      type: Boolean,
-      default: true,
     },
 
     yearsOfExperience: {
@@ -47,28 +48,71 @@ const providerSchema = new Schema<IProvider>(
       type: String,
     },
 
-    pickAndDrop: {
-      type: Boolean,
-      default: false,
-    },
-
-    serviceAtOwnerPremise: {
-      type: Boolean,
-      default: false,
-    },
-
-    isAvailable: {
+    temporarilyClosed: {
       type: Boolean,
       default: true,
     },
 
     subscriptionPlanHistory: {
-      type: [Object],
-      default: [],
+      type:Schema.Types.ObjectId,
+      ref:"SubscriptionHistory"
     },
+
     status: {
       type: String,
-      enum: ["Active", "Blocked"],
+      enum: ["Active", "Blocked","Step2Approved", "Step2Rejected","Pending", "Rejected"],
+    },
+
+    companyLicense: {
+      type: String,
+    },
+    ownerImage: {
+      type: String,
+    },
+
+    addressId: {
+      type: Schema.Types.ObjectId,
+      ref: "Address",
+      default: null,
+    },
+
+    schedule: {
+      workingDays: {
+        type: [String],
+        enum: [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday",
+        ],
+        default: [],
+      },
+      openTime: { type: String, default: null },
+      closeTime: { type: String, default: null },
+    },
+    rejectionReason: {
+      type: String,
+    },
+
+    bankDetails: {
+      accountHolderName: {
+        type: String,
+      },
+      accountNumber: {
+        type: String,
+      },
+      bankName: {
+        type: String,
+      },
+      ifscCode: {
+        type: String,
+      },
+      branchName: {
+        type: String,
+      },
     },
   },
   {

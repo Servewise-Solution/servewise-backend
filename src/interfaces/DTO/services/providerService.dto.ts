@@ -93,5 +93,34 @@ export interface PaginatedProviderDto {
   username: string;
   email: string;
   phone: number;
-  status: "Active" | "Blocked";
+  status: "Active" | "Blocked" | "Pending" | "Rejected" |"Step2Rejected" |"Step2Approved";
+}
+
+
+export interface IApplicantResponse {
+  id: string;
+  username: string;
+  email: string;
+  phone: number;
+
+  ownerName?: string;
+  isVerified: boolean;
+  status: string;
+
+  yearsOfExperience?: number;
+  premiseImage?: string;
+  serviceAtOwnerPremise?: boolean;
+
+  companyLicense?: string;
+
+  bankDetails?: {
+    accountHolderName?: string;
+    accountNumber?: string;
+    bankName?: string;
+    ifscCode?: string;
+    branchName?: string;
+  };
+
+  createdAt: Date;
+  updatedAt: Date;
 }

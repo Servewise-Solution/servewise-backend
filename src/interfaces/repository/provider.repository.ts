@@ -22,4 +22,16 @@ export interface IProviderRepository {
     newStatus: "Active" | "Blocked"
   ): Promise<IProvider>
   findById(id: string): Promise<IProvider | null>
+  updateProviderDetails(
+    providerId: string,
+    providerData: Partial<IProvider>
+  ): Promise<IProvider | null>
+  getAllApplicants(options: { page?: number; limit?: number }): Promise<{
+    data: IProvider[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  }> 
+
 }

@@ -136,8 +136,8 @@ export class EmailService implements IEmailService {
   async sendEmail(emailData: {
     to: string;
     subject: string;
-    html: string;
-    text: string;
+    html?: string;
+    text?: string;
   }): Promise<void> {
     try {
       const { to, subject, html, text } = emailData;

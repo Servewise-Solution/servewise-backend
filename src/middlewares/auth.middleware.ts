@@ -169,6 +169,24 @@ export class AuthMiddleware {
     };
   }
 
+  providerVerifyAuthenticate(...roles: Roles[]) {
+    return async (req: Request, res: Response, next: NextFunction) => {
+      const payload = await this.validateTokenAndRole(req, res, roles);
+      console.log(
+        "payload in the authenticate function in auth middleware:",
+        payload
+      );
+      if (!payload) return;
+
+      const isFullyVerified = await this.checkAccountStatus(
+        payload.Id,
+        payload.role
+      );
+
+      next();
+    };
+  }
+
   // Basic authentication - for profile access (not blocked)
   authenticateBasic(...roles: Roles[]) {
     return async (req: Request, res: Response, next: NextFunction) => {
