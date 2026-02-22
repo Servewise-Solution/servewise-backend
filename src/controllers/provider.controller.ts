@@ -9,6 +9,8 @@ import {
 import { MESSAGES } from "../constants/messages.js";
 import { config } from "../config/env.js";
 import type { IProviderService } from "../interfaces/services/provider.service.js";
+import type { AuthenticatedRequest } from "../middlewares/auth.middleware.js";
+import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 
 @injectable()
 export class ProviderController {
@@ -284,6 +286,8 @@ export class ProviderController {
         repoOptions.status = req.query.status as string;
       }
 
+      console.log("repoOptions",repoOptions)
+
       const serviceResponse = await this._providerService.getAllProviders(repoOptions);
 
       console.log(
@@ -351,6 +355,195 @@ export class ProviderController {
         .json(createErrorResponse("Internal server error"));
     }
   }
+ 
+  async submitProviderDocuments(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      const providerId = req.user?.id;
+  
+      if (!providerId) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: "Unauthorized: Provider ID missing in token",
+        });
+        return;
+      }
+  
+      const data = { ...req.body };
+      console.log("data",data)
+
+      // ✅ convert schedule string → object
+      if (data.schedule && typeof data.schedule === "string") {
+        data.schedule = JSON.parse(data.schedule);
+      }
+  
+      let premiseImageUrl: string | undefined;
+      let companyLicenseUrl: string | undefined;
+      let ownerImageUrl: string | undefined;
+  
+      const files = req.files as {
+        [fieldname: string]: Express.Multer.File[];
+      };
+  
+      if (files?.premiseImage?.[0]) {
+        premiseImageUrl = await uploadToCloudinary(
+          files.premiseImage[0].path
+        );
+      }
+  
+      if (files?.companyLicense?.[0]) {
+        companyLicenseUrl = await uploadToCloudinary(
+          files.companyLicense[0].path
+        );
+      }
+      if (files?.ownerImage?.[0]) {
+        ownerImageUrl = await uploadToCloudinary(
+          files.ownerImage[0].path
+        );
+      }
+  
+      const result =
+        await this._providerService.saveProviderVerificationDetails(
+          providerId,
+          {
+            ...data,
+            premiseImage: premiseImageUrl,
+            companyLicense: companyLicenseUrl,
+            ownerImage: ownerImageUrl
+          }
+        );
+  
+      res.status(HTTP_STATUS.OK).json({
+        success: result.success,
+        message: result.message,
+        data: result.data,
+      });
+    } catch (err: unknown) {
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err || "Failed to submit provider documents",
+      });
+    }
+  }
+  
+  async getAllApplicants(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entered into get applications list");
+  
+      const page = req.query.page
+        ? parseInt(req.query.page as string)
+        : undefined;
+  
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
+  
+      const options: { page?: number; limit?: number } = {};
+  
+      if (page !== undefined) options.page = page;
+      if (limit !== undefined) options.limit = limit;
+  
+      const serviceResponse =
+        await this._providerService.getAllApplicants(options);
+  
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch users"
+            )
+          );
+      }
+    } catch (error) {
+      console.error(error);
+  
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error"));
+    }
+  }
+
+  async acceptProvider(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("Entered provider accept controller");
+  
+      const providerId = req.params.providerId;
+  
+      if (!providerId || Array.isArray(providerId)) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid provider id",
+        });
+        return;
+      }
+  
+      const result =
+        await this._providerService.acceptProvider(providerId);
+  
+      res.status(HTTP_STATUS.OK).json(result);
+    } catch (error) {
+      console.error("Error occurred while accepting provider:", error);
+  
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Failed to accept provider",
+      });
+    }
+  }
+  
+
+  async rejectProvider(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("Entered provider reject controller");
+  
+      const providerId = req.params.providerId;
+      const rejectReason = req.body.rejectReason;
+  
+      if (!providerId || Array.isArray(providerId)) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid provider id",
+        });
+        return;
+      }
+  
+      if (!rejectReason || typeof rejectReason !== "string") {
+        res.status(400).json({
+          success: false,
+          message: "Reject reason required",
+        });
+        return;
+      }
+  
+      const result =
+        await this._providerService.rejectProvider(
+          providerId,
+          rejectReason
+        );
+  
+      res.status(HTTP_STATUS.OK).json(result);
+    } catch (error) {
+      console.error("Error occurred while rejecting provider:", error);
+  
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Failed to reject provider",
+      });
+    }
+  }
+  
+  
+  
+  
 
   async logout(req: Request, res: Response): Promise<void> {
     try {
