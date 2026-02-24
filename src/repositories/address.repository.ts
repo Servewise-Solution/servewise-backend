@@ -1,5 +1,6 @@
+import { type IAddress } from "../interfaces/model/addressModel.interface.js";
 import type { IAddressRepository } from "../interfaces/repository/address.repository.js";
-import { Address, type IAddress } from "../models/address.model.js";
+import address from "../models/address.model.js";
 import { BaseRepository } from "./base.repository.js";
 import { Types } from "mongoose";
 
@@ -8,12 +9,12 @@ export class AddressRepository
   implements IAddressRepository
 {
   constructor() {
-    super(Address);
+    super(address);
   }
 
   async upsertProviderAddress(
     providerId: string,
-    addressData: Partial<IAddress>
+    addressData: Partial<IAddress>,
   ): Promise<IAddress> {
     const address = await this.model.findOneAndUpdate(
       { providerId: new Types.ObjectId(providerId) },
@@ -24,7 +25,7 @@ export class AddressRepository
       {
         new: true,
         upsert: true,
-      }
+      },
     );
 
     return address;

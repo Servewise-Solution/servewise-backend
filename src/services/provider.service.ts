@@ -1,30 +1,52 @@
 import { inject, injectable } from "tsyringe";
-import type { IOTPService, OtpVerificationResult } from "../interfaces/infra/otpService.interface.js";
+import type {
+  IOTPService,
+  OtpVerificationResult,
+} from "../interfaces/infra/otpService.interface.js";
 import type { IRedisService } from "../interfaces/infra/redisService.interface.js";
-import type { IEmailService, SendEmailOptions } from "../interfaces/infra/emailService.interface.js";
+import type {
+  IEmailService,
+  SendEmailOptions,
+} from "../interfaces/infra/emailService.interface.js";
 import type { IPasswordHasher } from "../interfaces/infra/passwordService.interface.js";
 import type { IJwtService } from "../interfaces/infra/jwtService.interface.js";
 import { OTP_PREFIX, OtpPurpose } from "../constants/otp.constant.js";
 import { config } from "../config/env.js";
 import { Roles } from "../constants/roles.js";
 import type { IProviderService } from "../interfaces/services/provider.service.js";
-import type { ForgotPasswordRequest, ForgotPasswordResponse, IApplicantResponse, LoginData, LoginResponse, PaginatedProviderDto, ResendOtpResponse, ResetPasswordData, ResetPasswordResponse, SignupProviderData, SignUpProviderResponse, ToggleProviderStatusResponse, VerifyOtpData, VerifyOtpResponse } from "../interfaces/DTO/services/providerService.dto.js";
+import type {
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
+  IApplicantResponse,
+  LoginData,
+  LoginResponse,
+  PaginatedProviderDto,
+  ResendOtpResponse,
+  ResetPasswordData,
+  ResetPasswordResponse,
+  SignupProviderData,
+  SignUpProviderResponse,
+  ToggleProviderStatusResponse,
+  VerifyOtpData,
+  VerifyOtpResponse,
+} from "../interfaces/DTO/services/providerService.dto.js";
 import type { IProviderRepository } from "../interfaces/repository/provider.repository.js";
 import type { CreateProvider } from "../interfaces/DTO/repository/providerRepository.dto.js";
 import type { IProvider } from "../interfaces/model/providerModel.interface.js";
 import type { IAddressRepository } from "../interfaces/repository/address.repository.js";
 
-
 @injectable()
 export class ProviderService implements IProviderService {
   constructor(
-    @inject("IProviderRepository") private _providerRepository: IProviderRepository,
+    @inject("IProviderRepository")
+    private _providerRepository: IProviderRepository,
     @inject("IOTPService") private _otpService: IOTPService,
     @inject("IRedisService") private _redisService: IRedisService,
     @inject("IEmailService") private _emailService: IEmailService,
     @inject("IPasswordHasher") private _passwordService: IPasswordHasher,
     @inject("IJwtService") private _jwtService: IJwtService,
-    @inject("IAddressRepository") private _addressRepository:IAddressRepository
+    @inject("IAddressRepository")
+    private _addressRepository: IAddressRepository,
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -33,7 +55,7 @@ export class ProviderService implements IProviderService {
 
   private async generateAndSendOtp(
     email: string,
-    purpose: OtpPurpose
+    purpose: OtpPurpose,
   ): Promise<string> {
     const otp = await this._otpService.generateOtp();
     console.log(`Generated Otp for ${purpose}:`, otp);
@@ -55,7 +77,7 @@ export class ProviderService implements IProviderService {
   private async verifyOtpGeneric(
     email: string,
     otp: string,
-    purpose: OtpPurpose
+    purpose: OtpPurpose,
   ): Promise<OtpVerificationResult> {
     const redisKey = this.getOtpRedisKey(email, purpose);
     const storedOtp = await this._redisService.get(redisKey);
@@ -81,10 +103,12 @@ export class ProviderService implements IProviderService {
     };
   }
 
-  async providerSignUp(data: SignupProviderData): Promise<SignUpProviderResponse> {
+  async providerSignUp(
+    data: SignupProviderData,
+  ): Promise<SignUpProviderResponse> {
     try {
       console.log(
-        "entering to the usersignup function in the userauth service"
+        "entering to the usersignup function in the userauth service",
       );
       console.log("data:", data);
 
@@ -99,21 +123,21 @@ export class ProviderService implements IProviderService {
       }
 
       const pendingUser = await this._redisService.getObject(
-        `pending_user:${email}`
+        `pending_user:${email}`,
       );
       if (pendingUser) {
         console.log("user has pending signup, resending otp");
 
         const otp = await this.generateAndSendOtp(
           email,
-          OtpPurpose.REGISTRATION
+          OtpPurpose.REGISTRATION,
         );
         console.log("generated new otp for pending user:", otp);
 
         await this._redisService.setObject(
           `pending_user:${email}`,
           pendingUser,
-          config.OTP_EXPIRY_SECONDS
+          config.OTP_EXPIRY_SECONDS,
         );
 
         return {
@@ -136,7 +160,7 @@ export class ProviderService implements IProviderService {
       await this._redisService.setObject(
         `pending_user:${email}`,
         userData,
-        config.OTP_EXPIRY_SECONDS
+        config.OTP_EXPIRY_SECONDS,
       );
 
       console.log("pending user data stored in redis");
@@ -159,7 +183,7 @@ export class ProviderService implements IProviderService {
 
       if (OtpPurpose.REGISTRATION === purpose) {
         const pendingUser = await this._redisService.getObject<CreateProvider>(
-          `pending_user:${email}`
+          `pending_user:${email}`,
         );
 
         if (!pendingUser) {
@@ -172,7 +196,7 @@ export class ProviderService implements IProviderService {
         const verificationResult = await this.verifyOtpGeneric(
           email,
           otp,
-          OtpPurpose.REGISTRATION
+          OtpPurpose.REGISTRATION,
         );
 
         if (!verificationResult.success) {
@@ -182,11 +206,9 @@ export class ProviderService implements IProviderService {
           };
         }
 
-        const userData = { ...pendingUser};
+        const userData = { ...pendingUser };
 
         const newUser = await this._providerRepository.createProvider(userData);
-
-      
 
         const otpRedisKey = this.getOtpRedisKey(email, OtpPurpose.REGISTRATION);
         await this._redisService.delete(otpRedisKey);
@@ -211,7 +233,7 @@ export class ProviderService implements IProviderService {
         const verificationResult = await this.verifyOtpGeneric(
           email,
           otp,
-          OtpPurpose.PASSWORD_RESET
+          OtpPurpose.PASSWORD_RESET,
         );
 
         return verificationResult;
@@ -238,7 +260,7 @@ export class ProviderService implements IProviderService {
       if (user) {
         const newOtp = await this.generateAndSendOtp(
           data,
-          OtpPurpose.PASSWORD_RESET
+          OtpPurpose.PASSWORD_RESET,
         );
         console.log("generated new OTP for password reset:", newOtp);
 
@@ -250,20 +272,20 @@ export class ProviderService implements IProviderService {
       }
 
       const pendingUser = await this._redisService.getObject<CreateProvider>(
-        `pending_user:${data}`
+        `pending_user:${data}`,
       );
 
       if (pendingUser) {
         const newOtp = await this.generateAndSendOtp(
           data,
-          OtpPurpose.REGISTRATION
+          OtpPurpose.REGISTRATION,
         );
         console.log("generated new OTP for registration:", newOtp);
 
         await this._redisService.setObject(
           `pending_user:${data}`,
           pendingUser,
-          config.OTP_EXPIRY_SECONDS
+          config.OTP_EXPIRY_SECONDS,
         );
 
         return {
@@ -286,7 +308,7 @@ export class ProviderService implements IProviderService {
     }
   }
   async forgotPassword(
-    data: ForgotPasswordRequest
+    data: ForgotPasswordRequest,
   ): Promise<ForgotPasswordResponse> {
     try {
       console.log("Entering forgotPassword in userService");
@@ -310,7 +332,7 @@ export class ProviderService implements IProviderService {
 
       const otp = await this.generateAndSendOtp(
         email,
-        OtpPurpose.PASSWORD_RESET
+        OtpPurpose.PASSWORD_RESET,
       );
       console.log("Generated OTP for password reset:", otp);
 
@@ -387,7 +409,7 @@ export class ProviderService implements IProviderService {
 
       const isPasswordValid = await this._passwordService.verify(
         user.password,
-        password
+        password,
       );
 
       if (!isPasswordValid) {
@@ -402,26 +424,23 @@ export class ProviderService implements IProviderService {
 
       const access_token = this._jwtService.generateAccessToken(
         userId,
-        Roles.PROVIDER
+        Roles.PROVIDER,
       );
 
       const refresh_token = this._jwtService.generateRefreshToken(
         userId,
-        Roles.PROVIDER
+        Roles.PROVIDER,
       );
+
+      const providerObject = user.toObject();
+      delete providerObject.password;
 
       return {
         success: true,
         message: "Login successful",
         access_token,
         refresh_token,
-        data: {
-          _id: user._id,
-          username: user.username,
-          email: user.email,
-          phone: user.phone,
-          status: user.status,
-        },
+        data: providerObject,
       };
     } catch (error) {
       console.log("error", error);
@@ -454,31 +473,32 @@ export class ProviderService implements IProviderService {
   }> {
     try {
       console.log("Function fetching all the users");
-  
+
       const repoOptions: {
         page?: number;
         limit?: number;
         search?: string;
         status?: string;
       } = {};
-  
+
       if (options.page !== undefined) repoOptions.page = options.page;
       if (options.limit !== undefined) repoOptions.limit = options.limit;
       if (options.search !== undefined) repoOptions.search = options.search;
       if (options.status !== undefined) repoOptions.status = options.status;
-  
-      const result = await this._providerRepository.getAllProviders(repoOptions);
-  
+
+      const result =
+        await this._providerRepository.getAllProviders(repoOptions);
+
       console.log("result from the user service:", result);
-  
+
       const users: PaginatedProviderDto[] = result.data.map((user) => ({
-        _id: user._id.toString(), 
+        _id: user._id.toString(),
         username: user.username,
         email: user.email,
         phone: user.phone,
         status: user.status,
       }));
-  
+
       return {
         success: true,
         message: "Users fetched successfully",
@@ -502,8 +522,10 @@ export class ProviderService implements IProviderService {
       };
     }
   }
-  
-  async toggleProviderStatus(userId: string): Promise<ToggleProviderStatusResponse> {
+
+  async toggleProviderStatus(
+    userId: string,
+  ): Promise<ToggleProviderStatusResponse> {
     try {
       const user = await this._providerRepository.findById(userId);
       console.log("User fetched from repository:", user);
@@ -516,10 +538,13 @@ export class ProviderService implements IProviderService {
       }
 
       const newStatus = user.status === "Active" ? "Blocked" : "Active";
-      const response = await this._providerRepository.blockProvider(userId, newStatus);
+      const response = await this._providerRepository.blockProvider(
+        userId,
+        newStatus,
+      );
       console.log(
         "Response after toggling user status from the user repository:",
-        response
+        response,
       );
 
       return {
@@ -576,20 +601,19 @@ export class ProviderService implements IProviderService {
           isVerified: app.isVerified,
           status: app.status,
           yearsOfExperience: app.yearsOfExperience,
-      
+
           ...(app.premiseImage && { premiseImage: app.premiseImage }),
-          ...(app.serviceAtOwnerPremise !== undefined && {
-            serviceAtOwnerPremise: app.serviceAtOwnerPremise,
+          ...(app.serviceAtCustomerPremise !== undefined && {
+            serviceAtCustomerPremise: app.serviceAtCustomerPremise,
           }),
-          ...(app.companyLicense && { companyLicense: app.companyLicense }),
+          ...(app.businessLicense && { companyLicense: app.businessLicense }),
           ...(app.bankDetails && { bankDetails: app.bankDetails }),
-      
+
           createdAt: app.createdAt!,
           updatedAt: app.updatedAt!,
-        })
+        }),
       );
-      
-      
+
       return {
         success: true,
         message: "Users fetched successfully",
@@ -616,7 +640,7 @@ export class ProviderService implements IProviderService {
 
   async saveProviderVerificationDetails(
     providerId: string,
-    data: any
+    data: any,
   ): Promise<{
     success: boolean;
     message: string;
@@ -626,52 +650,43 @@ export class ProviderService implements IProviderService {
     };
   }> {
     try {
-  
-      const {
-        addressLine,
-        city,
-        state,
-        pincode,
-        location,
-        ...providerData
-      } = data;
-  
+      const { addressLine, city, state, pincode, location, ...providerData } =
+        data;
+
       let addressId = null;
-  
+
       if (location?.coordinates) {
-        const address =
-          await this._addressRepository.upsertProviderAddress(
-            providerId,
-            {
-              addressLine,
-              city,
-              state,
-              pincode,
-              location,
-            }
-          );
-  
+        const address = await this._addressRepository.upsertProviderAddress(
+          providerId,
+          {
+            addressLine,
+            city,
+            state,
+            pincode,
+            location,
+          },
+        );
+
         addressId = address._id;
       }
 
-      const provider =
-        await this._providerRepository.updateProviderDetails(
-          providerId,
-          {
-            ...providerData,
-            addressId,
-            isVerified: false,
-            status: "Pending",
-          }
-        );
-  
+      const provider = await this._providerRepository.updateProviderDetails(
+        providerId,
+        {
+          ...providerData,
+          addressId,
+          isVerified: false,
+          status: "Pending",
+        },
+      );
+
       if (!provider) {
         return {
           success: false,
           message: "Failed to update provider details",
         };
       }
-  
+
       return {
         success: true,
         message: "Documents submitted. Verification within 24 hours.",
@@ -680,32 +695,28 @@ export class ProviderService implements IProviderService {
           status: provider.status,
         },
       };
-  
     } catch (error) {
       console.error("Error saving provider details:", error);
       throw new Error("Unable to save provider verification details");
     }
   }
   async acceptProvider(
-    providerId: string
+    providerId: string,
   ): Promise<{ success: boolean; message: string }> {
     try {
       const updatedResult =
-        await this._providerRepository.updateProviderDetails(
-          providerId,
-          {
-            isVerified: true,
-            status: "Step2Approved",
-          }
-        );
-  
+        await this._providerRepository.updateProviderDetails(providerId, {
+          isVerified: true,
+          status: "Step2Approved",
+        });
+
       if (!updatedResult) {
         return {
           success: false,
           message: "Provider not found",
         };
       }
-  
+
       return {
         success: true,
         message: "Provider approved successfully",
@@ -716,39 +727,34 @@ export class ProviderService implements IProviderService {
     }
   }
 
-  
   async rejectProvider(
     providerId: string,
-    rejectReason: string
+    rejectReason: string,
   ): Promise<{ success: boolean; message: string }> {
     try {
       const updatedResult =
-        await this._providerRepository.updateProviderDetails(
-          providerId,
-          {
-            isVerified: false,
-            status: "Step2Rejected", 
-            rejectionReason:rejectReason
-          }
-        );
-  
+        await this._providerRepository.updateProviderDetails(providerId, {
+          isVerified: false,
+          status: "Step2Rejected",
+          rejectionReason: rejectReason,
+        });
+
       if (!updatedResult) {
         return {
           success: false,
           message: "Provider not found",
         };
       }
-  
-  
+
       const emailOptions: SendEmailOptions = {
         to: updatedResult.email,
         subject: "Provider Application Rejected",
         text: rejectReason,
         html: `<p>${rejectReason}</p>`,
       };
-  
+
       await this._emailService.sendEmail(emailOptions);
-  
+
       return {
         success: true,
         message: "Provider rejected successfully",
@@ -757,5 +763,5 @@ export class ProviderService implements IProviderService {
       console.error("Error rejecting provider:", error);
       throw new Error("Unable to reject provider");
     }
-  } 
+  }
 }
