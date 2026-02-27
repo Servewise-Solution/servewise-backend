@@ -1,7 +1,6 @@
 import type { IProvider } from "../../model/providerModel.interface.js";
 import type { IUser } from "../../model/userModel.interface.js";
 
-
 export interface SignupProviderData {
   username: string;
   email: string;
@@ -37,10 +36,7 @@ export interface VerifyOtpResponse {
 export interface LoginResponse {
   success: boolean;
   message: string;
-  data?: Pick<
-    IProvider,
-    "_id" | "username" | "email" | "phone"  | "status"
-  >;
+  data?: IProvider;
   access_token?: string;
   refresh_token?: string;
 }
@@ -93,9 +89,14 @@ export interface PaginatedProviderDto {
   username: string;
   email: string;
   phone: number;
-  status: "Active" | "Blocked" | "Pending" | "Rejected" |"Step2Rejected" |"Step2Approved";
+  status:
+    | "Active"
+    | "Blocked"
+    | "Pending"
+    | "Rejected"
+    | "Step2Rejected"
+    | "Step2Approved";
 }
-
 
 export interface IApplicantResponse {
   id: string;

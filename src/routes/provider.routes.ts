@@ -80,7 +80,7 @@ export class ProviderRoutes {
       this.authMiddleware.providerVerifyAuthenticate(Roles.PROVIDER),
       upload.fields([
         { name: "premiseImage", maxCount: 1 },
-        { name: "companyLicense", maxCount: 1 },
+        { name: "businessLicense", maxCount: 1 },
         { name: "ownerImage", maxCount: 1 }
       ]),
       providerController.submitProviderDocuments.bind(providerController)

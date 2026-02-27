@@ -1,8 +1,8 @@
-import type { IAddress } from "../../models/address.model.js";
+import { type IAddress } from "../../interfaces/model/addressModel.interface.js";
 
-export interface IAddressRepository{
-    upsertProviderAddress(
-        providerId: string,
-        addressData: Partial<IAddress>
-      ): Promise<IAddress>
+export interface IAddressRepository {
+  upsertProviderAddress(
+    providerId: string,
+    addressData: Partial<IAddress>,
+  ): Promise<IAddress>;
 }

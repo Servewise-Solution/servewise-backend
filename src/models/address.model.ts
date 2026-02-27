@@ -1,70 +1,51 @@
-import mongoose, { Schema, model, Types, Document } from "mongoose";
+import mongoose, { Schema } from "mongoose";
+import { type IAddress } from "../interfaces/model/addressModel.interface.js";
 
-interface GeoPoint {
-  type: "Point";
-  coordinates: [number, number]; 
-}
-
-export interface IAddress extends Document {
-  providerId: Types.ObjectId;
-  addressLine: string | null;
-  city: string | null;
-  state: string | null;
-  pincode: string | null;
-  location: GeoPoint;
-}
-
-const addressSchema = new Schema<IAddress>(
+const addressSchema: Schema<IAddress> = new Schema(
   {
-    providerId: {
-      type: Schema.Types.ObjectId,
-      ref: "Provider",
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
       required: true,
-      unique: true,
+      refPath: "ownerModel",
     },
-
-    addressLine: {
+    ownerModel: {
       type: String,
-      trim: true,
-      default: null,
+      enum: ["user", "provider"],
+      required: true,
     },
-
+    fullAddress: {
+      type: String,
+      required: true,
+    },
     city: {
       type: String,
-      trim: true,
-      default: null,
+      required: true,
     },
-
     state: {
       type: String,
-      trim: true,
-      default: null,
+      required: true,
     },
-
     pincode: {
       type: String,
-      trim: true,
-      default: null,
+      required: true,
     },
-
-    location: {
-      type: {
-        type: String,
-        enum: ["Point"],
-        required: true,
-        default: "Point",
-      },
-      coordinates: {
-        type: [Number],
-        required: true,
-      },
+    longitude: {
+      type: Number,
+      required: true,
+    },
+    latitude: {
+      type: Number,
+      required: true,
+    },
+    landmark: {
+      type: String,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true },
 );
 
-addressSchema.index({ location: "2dsphere" });
+addressSchema.index({ longitude: 1, latitude: 1 });
 
-export const Address = model<IAddress>("Address", addressSchema);
+const address = mongoose.model<IAddress>("address", addressSchema);
+
+export default address;

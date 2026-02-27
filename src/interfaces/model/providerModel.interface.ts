@@ -21,11 +21,11 @@ export interface IProvider extends Document {
   yearsOfExperience: number;
 
   premiseImage?: string;
-  serviceAtOwnerPremise: boolean;
+  serviceAtCustomerPremise: boolean;
   businessName?: string;
 
   temporarilyClosed: boolean;
-  ownerImage?:string
+  ownerImage?: string;
 
   subscriptionPlanHistory: Types.ObjectId;
   schedule?: {
@@ -46,7 +46,7 @@ export interface IProvider extends Document {
 
   addressId?: Types.ObjectId;
 
-  companyLicense?: string;
+  businessLicense?: string;
   bankDetails?: IBankDetails;
 
   createdAt?: Date;

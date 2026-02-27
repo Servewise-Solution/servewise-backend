@@ -30,7 +30,6 @@ const providerSchema = new Schema<IProvider>(
 
     businessName: {
       type: String,
-      trim: true,
       default: null,
     },
 
@@ -54,20 +53,30 @@ const providerSchema = new Schema<IProvider>(
     },
 
     subscriptionPlanHistory: {
-      type:Schema.Types.ObjectId,
-      ref:"SubscriptionHistory"
+      type: Schema.Types.ObjectId,
+      ref: "SubscriptionHistory",
     },
 
     status: {
       type: String,
-      enum: ["Active", "Blocked","Step2Approved", "Step2Rejected","Pending", "Rejected"],
+      enum: [
+        "Active",
+        "Blocked",
+        "Step2Approved",
+        "Step2Rejected",
+        "Pending",
+        "Rejected",
+      ],
     },
 
-    companyLicense: {
+    businessLicense: {
       type: String,
     },
     ownerImage: {
       type: String,
+    },
+    serviceAtCustomerPremise: {
+      type: Boolean,
     },
 
     addressId: {
@@ -117,7 +126,7 @@ const providerSchema = new Schema<IProvider>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const Provider = mongoose.model<IProvider>("Provider", providerSchema);

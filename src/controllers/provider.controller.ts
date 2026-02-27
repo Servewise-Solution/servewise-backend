@@ -14,7 +14,9 @@ import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 
 @injectable()
 export class ProviderController {
-  constructor(@inject("IProviderService") private _providerService: IProviderService) {}
+  constructor(
+    @inject("IProviderService") private _providerService: IProviderService,
+  ) {}
   async register(req: Request, res: Response): Promise<void> {
     try {
       console.log("entering to the register function in userController");
@@ -30,16 +32,16 @@ export class ProviderController {
           .json(
             createSuccessResponse(
               serviceResponse.data,
-              serviceResponse.message || MESSAGES.REGISTRATION_SUCCESS
-            )
+              serviceResponse.message || MESSAGES.REGISTRATION_SUCCESS,
+            ),
           );
       } else {
         res
           .status(HTTP_STATUS.BAD_REQUEST)
           .json(
             createErrorResponse(
-              serviceResponse.message || MESSAGES.REGISTRATION_FAILED
-            )
+              serviceResponse.message || MESSAGES.REGISTRATION_FAILED,
+            ),
           );
       }
     } catch (error) {
@@ -109,8 +111,8 @@ export class ProviderController {
           .json(
             createSuccessResponse(
               { email: serviceResponse.email },
-              serviceResponse.message
-            )
+              serviceResponse.message,
+            ),
           );
       } else {
         let statusCode: number;
@@ -136,7 +138,9 @@ export class ProviderController {
   async forgotPassword(req: Request, res: Response): Promise<void> {
     try {
       const { email } = req.body;
-      const serviceResponse = await this._providerService.forgotPassword({ email });
+      const serviceResponse = await this._providerService.forgotPassword({
+        email,
+      });
 
       if (serviceResponse.success) {
         res
@@ -144,16 +148,16 @@ export class ProviderController {
           .json(
             createSuccessResponse(
               { email: serviceResponse.email },
-              serviceResponse.message
-            )
+              serviceResponse.message,
+            ),
           );
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
           ? HTTP_STATUS.NOT_FOUND
           : serviceResponse.message?.includes("blocked") ||
-            serviceResponse.message?.includes("verify your email")
-          ? HTTP_STATUS.FORBIDDEN
-          : HTTP_STATUS.BAD_REQUEST;
+              serviceResponse.message?.includes("verify your email")
+            ? HTTP_STATUS.FORBIDDEN
+            : HTTP_STATUS.BAD_REQUEST;
 
         const message = serviceResponse.message?.includes("not found")
           ? MESSAGES.USER_NOT_FOUND
@@ -188,16 +192,16 @@ export class ProviderController {
         const statusCode = serviceResponse.message?.includes("not found")
           ? HTTP_STATUS.NOT_FOUND
           : serviceResponse.message?.includes("verify your email")
-          ? HTTP_STATUS.FORBIDDEN
-          : serviceResponse.message?.includes("blocked")
-          ? HTTP_STATUS.FORBIDDEN
-          : HTTP_STATUS.BAD_REQUEST;
+            ? HTTP_STATUS.FORBIDDEN
+            : serviceResponse.message?.includes("blocked")
+              ? HTTP_STATUS.FORBIDDEN
+              : HTTP_STATUS.BAD_REQUEST;
         res
           .status(statusCode)
           .json(
             createErrorResponse(
-              serviceResponse.message || "Failed to reset password"
-            )
+              serviceResponse.message || "Failed to reset password",
+            ),
           );
       }
     } catch (error) {
@@ -230,22 +234,22 @@ export class ProviderController {
         res.status(HTTP_STATUS.OK).json(
           createSuccessResponse(
             {
-              user: serviceResponse.data,
+              provider: serviceResponse.data,
               access_token: serviceResponse.access_token,
             },
-            serviceResponse.message
-          )
+            serviceResponse.message,
+          ),
         );
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
           ? HTTP_STATUS.NOT_FOUND
           : serviceResponse.message?.includes("Invalid password")
-          ? HTTP_STATUS.UNAUTHORIZED
-          : serviceResponse.message?.includes("verify your email")
-          ? HTTP_STATUS.FORBIDDEN
-          : serviceResponse.message?.includes("blocked")
-          ? HTTP_STATUS.FORBIDDEN
-          : HTTP_STATUS.BAD_REQUEST;
+            ? HTTP_STATUS.UNAUTHORIZED
+            : serviceResponse.message?.includes("verify your email")
+              ? HTTP_STATUS.FORBIDDEN
+              : serviceResponse.message?.includes("blocked")
+                ? HTTP_STATUS.FORBIDDEN
+                : HTTP_STATUS.BAD_REQUEST;
 
         res
           .status(statusCode)
@@ -286,28 +290,32 @@ export class ProviderController {
         repoOptions.status = req.query.status as string;
       }
 
-      console.log("repoOptions",repoOptions)
+      console.log("repoOptions", repoOptions);
 
-      const serviceResponse = await this._providerService.getAllProviders(repoOptions);
+      const serviceResponse =
+        await this._providerService.getAllProviders(repoOptions);
 
       console.log(
         "result from the fetching all users controller:",
-        serviceResponse
+        serviceResponse,
       );
 
       if (serviceResponse.success) {
         res
           .status(HTTP_STATUS.OK)
           .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+            createSuccessResponse(
+              serviceResponse.data,
+              serviceResponse.message,
+            ),
           );
       } else {
         res
           .status(HTTP_STATUS.BAD_REQUEST)
           .json(
             createErrorResponse(
-              serviceResponse.message || "Failed to fetch users"
-            )
+              serviceResponse.message || "Failed to fetch users",
+            ),
           );
       }
     } catch (error) {
@@ -328,13 +336,17 @@ export class ProviderController {
         return;
       }
 
-      const serviceResponse = await this._providerService.toggleProviderStatus(userId);
+      const serviceResponse =
+        await this._providerService.toggleProviderStatus(userId);
 
       if (serviceResponse.success) {
         res
           .status(HTTP_STATUS.OK)
           .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+            createSuccessResponse(
+              serviceResponse.data,
+              serviceResponse.message,
+            ),
           );
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
@@ -344,8 +356,8 @@ export class ProviderController {
           .status(statusCode)
           .json(
             createErrorResponse(
-              serviceResponse.message || "Failed to toggle user status"
-            )
+              serviceResponse.message || "Failed to toggle user status",
+            ),
           );
       }
     } catch (error) {
@@ -355,14 +367,14 @@ export class ProviderController {
         .json(createErrorResponse("Internal server error"));
     }
   }
- 
+
   async submitProviderDocuments(
     req: AuthenticatedRequest,
-    res: Response
+    res: Response,
   ): Promise<void> {
     try {
       const providerId = req.user?.id;
-  
+
       if (!providerId) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
@@ -370,40 +382,36 @@ export class ProviderController {
         });
         return;
       }
-  
+
       const data = { ...req.body };
-      console.log("data",data)
+      console.log("data", data);
 
       // ✅ convert schedule string → object
       if (data.schedule && typeof data.schedule === "string") {
         data.schedule = JSON.parse(data.schedule);
       }
-  
+
       let premiseImageUrl: string | undefined;
       let companyLicenseUrl: string | undefined;
       let ownerImageUrl: string | undefined;
-  
+
       const files = req.files as {
         [fieldname: string]: Express.Multer.File[];
       };
-  
+
       if (files?.premiseImage?.[0]) {
-        premiseImageUrl = await uploadToCloudinary(
-          files.premiseImage[0].path
-        );
+        premiseImageUrl = await uploadToCloudinary(files.premiseImage[0].path);
       }
-  
+
       if (files?.companyLicense?.[0]) {
         companyLicenseUrl = await uploadToCloudinary(
-          files.companyLicense[0].path
+          files.companyLicense[0].path,
         );
       }
       if (files?.ownerImage?.[0]) {
-        ownerImageUrl = await uploadToCloudinary(
-          files.ownerImage[0].path
-        );
+        ownerImageUrl = await uploadToCloudinary(files.ownerImage[0].path);
       }
-  
+
       const result =
         await this._providerService.saveProviderVerificationDetails(
           providerId,
@@ -411,10 +419,10 @@ export class ProviderController {
             ...data,
             premiseImage: premiseImageUrl,
             companyLicense: companyLicenseUrl,
-            ownerImage: ownerImageUrl
-          }
+            ownerImage: ownerImageUrl,
+          },
         );
-  
+
       res.status(HTTP_STATUS.OK).json({
         success: result.success,
         message: result.message,
@@ -427,45 +435,48 @@ export class ProviderController {
       });
     }
   }
-  
+
   async getAllApplicants(req: Request, res: Response): Promise<void> {
     try {
       console.log("entered into get applications list");
-  
+
       const page = req.query.page
         ? parseInt(req.query.page as string)
         : undefined;
-  
+
       const limit = req.query.limit
         ? parseInt(req.query.limit as string)
         : undefined;
-  
+
       const options: { page?: number; limit?: number } = {};
-  
+
       if (page !== undefined) options.page = page;
       if (limit !== undefined) options.limit = limit;
-  
+
       const serviceResponse =
         await this._providerService.getAllApplicants(options);
-  
+
       if (serviceResponse.success) {
         res
           .status(HTTP_STATUS.OK)
           .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+            createSuccessResponse(
+              serviceResponse.data,
+              serviceResponse.message,
+            ),
           );
       } else {
         res
           .status(HTTP_STATUS.BAD_REQUEST)
           .json(
             createErrorResponse(
-              serviceResponse.message || "Failed to fetch users"
-            )
+              serviceResponse.message || "Failed to fetch users",
+            ),
           );
       }
     } catch (error) {
       console.error(error);
-  
+
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal server error"));
@@ -475,9 +486,9 @@ export class ProviderController {
   async acceptProvider(req: Request, res: Response): Promise<void> {
     try {
       console.log("Entered provider accept controller");
-  
+
       const providerId = req.params.providerId;
-  
+
       if (!providerId || Array.isArray(providerId)) {
         res.status(400).json({
           success: false,
@@ -485,29 +496,27 @@ export class ProviderController {
         });
         return;
       }
-  
-      const result =
-        await this._providerService.acceptProvider(providerId);
-  
+
+      const result = await this._providerService.acceptProvider(providerId);
+
       res.status(HTTP_STATUS.OK).json(result);
     } catch (error) {
       console.error("Error occurred while accepting provider:", error);
-  
+
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: "Failed to accept provider",
       });
     }
   }
-  
 
   async rejectProvider(req: Request, res: Response): Promise<void> {
     try {
       console.log("Entered provider reject controller");
-  
+
       const providerId = req.params.providerId;
       const rejectReason = req.body.rejectReason;
-  
+
       if (!providerId || Array.isArray(providerId)) {
         res.status(400).json({
           success: false,
@@ -515,7 +524,7 @@ export class ProviderController {
         });
         return;
       }
-  
+
       if (!rejectReason || typeof rejectReason !== "string") {
         res.status(400).json({
           success: false,
@@ -523,27 +532,22 @@ export class ProviderController {
         });
         return;
       }
-  
-      const result =
-        await this._providerService.rejectProvider(
-          providerId,
-          rejectReason
-        );
-  
+
+      const result = await this._providerService.rejectProvider(
+        providerId,
+        rejectReason,
+      );
+
       res.status(HTTP_STATUS.OK).json(result);
     } catch (error) {
       console.error("Error occurred while rejecting provider:", error);
-  
+
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: "Failed to reject provider",
       });
     }
   }
-  
-  
-  
-  
 
   async logout(req: Request, res: Response): Promise<void> {
     try {
@@ -563,5 +567,4 @@ export class ProviderController {
         .json(createErrorResponse("Internal server error occurred"));
     }
   }
-  
 }
