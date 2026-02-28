@@ -4,6 +4,7 @@ import { UserRoutes } from "./user.routes.js";
 import { AdminRoutes } from "./admin.routes.js";
 import { AuthRoutes } from "./auth.routes.js";
 import { ProviderRoutes } from "./provider.routes.js";
+import { ApplicantsRoutes } from "./applicants.routes.js";
 
 export class RouteRegistry {
 
@@ -16,6 +17,9 @@ export class RouteRegistry {
 
     const providerRoutes = new ProviderRoutes();
     app.use("/api/provider", providerRoutes.getRouter());
+
+    const applicantsRoutes = new ApplicantsRoutes();
+    app.use("/api/applicant", applicantsRoutes.getRouter());
 
     const adminRoutes = new AdminRoutes();
     app.use("/api/admin", adminRoutes.getRouter());

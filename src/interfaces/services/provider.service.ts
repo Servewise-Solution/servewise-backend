@@ -32,38 +32,5 @@ export interface IProviderService {
       };
     };
   }>
-  saveProviderVerificationDetails(
-    providerId: string,
-    data: Partial<IProvider>
-  ): Promise<{
-    success: boolean;
-    message: string;
-    data?: {
-      isVerified?: boolean;
-      status?: string;
-    };
-  }>
   toggleProviderStatus(userId: string): Promise<ToggleProviderStatusResponse>
-  getAllApplicants(options: { page?: number; limit?: number }): Promise<{
-    success: boolean;
-    message: string;
-    data?: {
-      users: IApplicantResponse[];
-      pagination: {
-        total: number;
-        page: number;
-        pages: number;
-        limit: number;
-        hasNextPage: boolean;
-        hasPrevPage: boolean;
-      };
-    };
-  }>
-  acceptProvider(
-    providerId: string
-  ): Promise<{ success: boolean; message: string }>
-  rejectProvider(
-    providerId: string,
-    rejectReason: string
-  ): Promise<{ success: boolean; message: string }>
 }
