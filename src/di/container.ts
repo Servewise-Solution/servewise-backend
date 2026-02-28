@@ -41,6 +41,8 @@ import type { IProviderService } from "../interfaces/services/provider.service.j
 import { ProviderService } from "../services/provider.service.js";
 import type { IAddressRepository } from "../interfaces/repository/address.repository.js";
 import { AddressRepository } from "../repositories/address.repository.js";
+import type { IApplicantsService } from "../interfaces/services/applicants.service.js";
+import { ApplicantsService } from "../services/applicants.service.js";
 
 container.registerSingleton<IApp>("IApp", App);
 container.registerSingleton<IDataBase>("IDataBase", MongoDBConnection);
@@ -61,6 +63,6 @@ container.register<IGoogleAuthService>("IGoogleAuthService", {
 container.registerSingleton<IProviderRepository>("IProviderRepository",ProviderRepository)  
 container.registerSingleton<IProviderService>("IProviderService",ProviderService)
 container.registerSingleton<IAddressRepository>("IAddressRepository",AddressRepository) 
-
+container.registerSingleton<IApplicantsService>("IApplicantsService",ApplicantsService)
 
 export { container };
