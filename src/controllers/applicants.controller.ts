@@ -162,6 +162,7 @@ export class ApplicantsController {
         rejectReason,
       );
 
+      
       res.status(HTTP_STATUS.OK).json(result);
     } catch (error) {
       console.error("Error occurred while rejecting provider:", error);
